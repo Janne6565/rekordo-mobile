@@ -1,3 +1,4 @@
+import { KeyboardLift } from "@/components/KeyboardLift";
 import type { DetailChrome } from "@janne6565/rekordo-shared";
 import { X } from "lucide-react-native";
 import { type ReactNode, useRef } from "react";
@@ -5,8 +6,6 @@ import { useTranslation } from "react-i18next";
 import {
   Animated,
   type GestureResponderHandlers,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   StyleSheet,
   useWindowDimensions,
@@ -155,13 +154,10 @@ export function CoverSheet({
         // Only where there is a bar to keep above the keyboard. Android resizes the window
         // itself; on iOS nothing does, and a Save button under the keyboard is a Save
         // button you have to dismiss the keyboard to find.
-        <KeyboardAvoidingView
-          style={styles.fill}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
+        <KeyboardLift style={styles.fill}>
           {scroll}
           {footer}
-        </KeyboardAvoidingView>
+        </KeyboardLift>
       )}
 
       <Animated.View

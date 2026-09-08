@@ -1,4 +1,5 @@
 import { lookupAlbumCovers, lookupPressingCovers } from "@/api/releases";
+import { KeyboardLift } from "@/components/KeyboardLift";
 import { ReleaseArt } from "@/components/ReleaseArt";
 import { RisingSheet } from "@/components/RisingSheet";
 import {
@@ -27,9 +28,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Image,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -275,10 +274,7 @@ export function WishSheet({ onClose, release = null, entry = null }: WishSheetPr
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} accessibilityRole="button" />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.sheetWrap}
-      >
+      <KeyboardLift style={styles.sheetWrap}>
         <RisingSheet style={styles.sheet} onDismiss={onClose}>
           <View style={styles.grabber} />
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -419,7 +415,7 @@ export function WishSheet({ onClose, release = null, entry = null }: WishSheetPr
             <Text style={styles.footnote}>{t("wishlist.oneEntryHint")}</Text>
           </ScrollView>
         </RisingSheet>
-      </KeyboardAvoidingView>
+      </KeyboardLift>
     </Modal>
   );
 }

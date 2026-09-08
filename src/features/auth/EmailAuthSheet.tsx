@@ -1,3 +1,4 @@
+import { KeyboardLift } from "@/components/KeyboardLift";
 import { RisingSheet } from "@/components/RisingSheet";
 import type { useAccountLogic } from "@/features/auth/useAccountLogic";
 import { colors, fonts } from "@/theme/colors";
@@ -8,9 +9,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -43,10 +42,7 @@ export function EmailAuthSheet({ logic, onClose }: EmailAuthSheetProps) {
         onPress={onClose}
         style={styles.scrim}
       />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.holder}
-      >
+      <KeyboardLift style={styles.holder}>
         <RisingSheet style={styles.sheet} onDismiss={onClose}>
           <View style={styles.grabber} />
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -137,7 +133,7 @@ export function EmailAuthSheet({ logic, onClose }: EmailAuthSheetProps) {
             </Pressable>
           </ScrollView>
         </RisingSheet>
-      </KeyboardAvoidingView>
+      </KeyboardLift>
     </Modal>
   );
 }

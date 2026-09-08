@@ -1,3 +1,4 @@
+import { KeyboardLift } from "@/components/KeyboardLift";
 import { CHOOSABLE_FORMATS } from "@/domain/formats";
 import { useManualEntryLogic } from "@/features/manual/useManualEntryLogic";
 import { colors } from "@/theme/colors";
@@ -9,8 +10,6 @@ import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -35,10 +34,7 @@ export function ManualScreen({ barcode = "" }: { readonly barcode?: string } = {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <KeyboardAvoidingView
-        style={styles.fill}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <KeyboardLift style={styles.fill}>
         <View style={styles.header}>
           <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={10}>
             <Text style={styles.cancel}>{t("common.cancel")}</Text>
@@ -234,7 +230,7 @@ export function ManualScreen({ barcode = "" }: { readonly barcode?: string } = {
           <ScanBarcode size={17} color={colors.inkSubtle} strokeWidth={1.6} />
           <Text style={styles.footerText}>{t("manual.nothingLookedUp")}</Text>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardLift>
     </SafeAreaView>
   );
 }

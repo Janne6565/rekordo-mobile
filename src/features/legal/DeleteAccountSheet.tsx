@@ -1,3 +1,4 @@
+import { KeyboardLift } from "@/components/KeyboardLift";
 import { RisingSheet } from "@/components/RisingSheet";
 import { isDeletionConfirmed } from "@/features/legal/confirmDeletion";
 import { colors, fonts } from "@/theme/colors";
@@ -6,9 +7,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -44,10 +43,7 @@ export function DeleteAccountSheet({
         onPress={onCancel}
         style={styles.scrim}
       />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.sheetHolder}
-      >
+      <KeyboardLift style={styles.sheetHolder}>
         <RisingSheet style={styles.sheet} onDismiss={onCancel}>
           <View style={styles.grabber} />
           <Text style={styles.title}>{t("legal.delete.title")}</Text>
@@ -90,7 +86,7 @@ export function DeleteAccountSheet({
             <Text style={styles.keepText}>{t("legal.delete.keep")}</Text>
           </Pressable>
         </RisingSheet>
-      </KeyboardAvoidingView>
+      </KeyboardLift>
     </Modal>
   );
 }
