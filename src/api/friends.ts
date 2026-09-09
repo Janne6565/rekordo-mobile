@@ -78,6 +78,12 @@ export interface ActivityEntry {
   occurredAt?: string;
   copyCount?: number;
   collapsedCovers?: string[];
+  /**
+   * True when the viewer is the one who did it, which only an accepted request can be.
+   * Both people in that line read the same row and `actor` is always the *other* one, so
+   * this is what picks the sentence.
+   */
+  byViewer?: boolean;
 }
 
 export interface SharedCopy {

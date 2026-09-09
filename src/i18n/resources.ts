@@ -231,6 +231,7 @@ const enCommon = {
       wishFulfilled:
         "<person>{{name}}</person> found <title>{{title}}</title>: off the wishlist, onto the shelf",
       accepted: "<person>{{name}}</person> accepted your request",
+      acceptedByYou: "You accepted <person>{{name}}</person>'s request",
     },
     feedEmpty: {
       title: "Nothing yet",
@@ -1389,6 +1390,7 @@ const deCommon: CommonSchema = {
       wishFulfilled:
         "<person>{{name}}</person> hat <title>{{title}}</title> gefunden: von der Wunschliste ins Regal",
       accepted: "<person>{{name}}</person> hat deine Anfrage angenommen",
+      acceptedByYou: "Du hast die Anfrage von <person>{{name}}</person> angenommen",
     },
     feedEmpty: {
       title: "Noch nichts",

@@ -179,7 +179,11 @@ function Sentence({
       : entry.type === "WISH_FULFILLED"
         ? "friends.line.wishFulfilled"
         : entry.type === "FRIENDSHIP_ACCEPTED"
-          ? "friends.line.accepted"
+          ? // The one line both people in it can read, and the server draws the *other*
+            // one on it either way, so the sentence is what changes sides.
+            entry.byViewer
+            ? "friends.line.acceptedByYou"
+            : "friends.line.accepted"
           : "friends.line.added";
   return (
     <Trans i18nKey={key} values={{ name, title: entry.title }} components={{ person, title }} />
