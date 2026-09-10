@@ -543,6 +543,10 @@ const enCommon = {
     passwordHint: "Ten characters minimum. A passphrase beats a password.",
     continueWith: "Continue with {{provider}}",
     forgotSent: "If that address has an account, a reset link is on its way.",
+    resetLede: "Answer the check above, then send yourself a reset link.",
+    sendResetLink: "Send reset link",
+    challengeUnavailable:
+      "The check could not be loaded. A blocker or a strict network is the usual reason.",
     resetNeedsConfirmed:
       "A reset link only goes to an address that has been confirmed. Otherwise there is no way to know who is reading it.",
     strip: {
@@ -597,6 +601,7 @@ const enCommon = {
       invalidEmail: "That does not look like an e-mail address.",
       passwordTooShort: "Your password needs at least ten characters.",
       consentRequired: "Both boxes have to be ticked to create an account.",
+      challengeFailed: "The check above did not go through. Try it once more.",
       generic: "Something went wrong. Try again in a moment.",
     },
   },
@@ -1706,6 +1711,10 @@ const deCommon: CommonSchema = {
     passwordHint: "Mindestens zehn Zeichen. Eine Passphrase schlägt ein Passwort.",
     continueWith: "Weiter mit {{provider}}",
     forgotSent: "Falls es zu dieser Adresse ein Konto gibt, ist ein Link unterwegs.",
+    resetLede: "Beantworte die Prüfung oben und schick dir dann einen Link zum Zurücksetzen.",
+    sendResetLink: "Link zum Zurücksetzen senden",
+    challengeUnavailable:
+      "Die Prüfung konnte nicht geladen werden. Meist liegt es an einem Blocker oder einem strengen Netzwerk.",
     resetNeedsConfirmed:
       "Ein Reset-Link geht nur an eine bestätigte Adresse, sonst lässt sich nicht wissen, wer sie liest.",
     strip: {
@@ -1760,6 +1769,7 @@ const deCommon: CommonSchema = {
       invalidEmail: "Das sieht nicht nach einer E-Mail-Adresse aus.",
       passwordTooShort: "Dein Passwort braucht mindestens zehn Zeichen.",
       consentRequired: "Beide Häkchen sind nötig, um ein Konto zu erstellen.",
+      challengeFailed: "Die Prüfung oben ist nicht durchgegangen. Versuch sie noch einmal.",
       generic: "Da ist etwas schiefgegangen. Versuche es gleich noch einmal.",
     },
   },

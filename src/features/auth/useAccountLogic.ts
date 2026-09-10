@@ -18,6 +18,7 @@ import {
 import { lookupAlbumCovers, lookupPressingCovers } from "@/api/releases";
 import { toCsv, wishlistToCsv } from "@/domain/csv";
 import { signInWithProvider } from "@/features/auth/externalSignIn";
+import { useChallenge } from "@/features/auth/useChallenge";
 import { useStore } from "@/local/StoreProvider";
 import { readPhotoBytes } from "@/local/photoBytes";
 import { readSyncEnabled, writeSyncEnabled } from "@/local/settings";
@@ -44,6 +45,7 @@ export type AuthError =
   | "invalidEmail"
   | "passwordTooShort"
   | "consentRequired"
+  | "challengeFailed"
   | "generic";
 
 /**
@@ -64,6 +66,9 @@ function errorsFrom(error: unknown): AuthError[] {
   const { status, invalidFields } = error as { status?: number; invalidFields?: readonly string[] };
   if (status === 409) return ["emailTaken"];
   if (status === 401) return ["badCredentials"];
+  // The bot check, kept distinct from a wrong password and from a rate limit: the only
+  // useful response to it is to solve the fresh challenge the widget has already drawn.
+  if (status === 403) return ["challengeFailed"];
   // One line per distinct complaint: both consent ticks map to the same sentence, and
   // printing it twice would read as two different problems.
   const named = [
@@ -92,6 +97,15 @@ export function useAccountLogic() {
   const restoring = useAppSelector((state) => state.auth.status === "unknown");
   const firstSyncPending = useAppSelector((state) => state.auth.firstSyncPending);
   const [mode, setMode] = useState<AuthMode>("SIGN_IN");
+  /**
+   * Whether the sheet is asking for a reset rather than a sign-in.
+   *
+   * It exists because the bot check does. A token carries the action it was solved for, and
+   * the server refuses a sign-in token presented at the reset endpoint -- so "Forgot?" can
+   * no longer fire straight off a press. It puts the one widget on screen into asking for
+   * the other action instead, and the send waits for it.
+   */
+  const [resetting, setResetting] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -107,6 +121,13 @@ export function useAccountLogic() {
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [providers, setProviders] = useState<AuthProvider[]>([]);
   const [resetSent, setResetSent] = useState(false);
+  /*
+   * One widget for all three actions this sheet can take. Re-created when the action
+   * changes, because a token solved for one endpoint is refused at the others.
+   */
+  const challenge = useChallenge(
+    resetting ? "forgot-password" : mode === "REGISTER" ? "register" : "login",
+  );
   const [failed, setFailed] = useState<readonly AuthError[]>([]);
   const [busy, setBusy] = useState(false);
   /**
@@ -147,13 +168,23 @@ export function useAccountLogic() {
     try {
       const account =
         mode === "REGISTER"
-          ? await createAccount(email.trim(), password, displayName.trim(), agreed, ageConfirmed)
-          : await signIn(email.trim(), password, rememberMe);
+          ? await createAccount(
+              email.trim(),
+              password,
+              displayName.trim(),
+              agreed,
+              ageConfirmed,
+              challenge.token,
+            )
+          : await signIn(email.trim(), password, rememberMe, challenge.token);
       dispatch(signedIn({ user: account, firstSyncPending: await decideFirstSync() }));
       setPassword("");
     } catch (error) {
       setFailed(errorsFrom(error));
     } finally {
+      // Spent either way: a token is redeemed exactly once, so leaving it in place would
+      // make the next attempt fail for a reason nothing on screen could explain.
+      challenge.reset();
       setBusy(false);
     }
   }, [
@@ -167,6 +198,8 @@ export function useAccountLogic() {
     // which is the order the form is laid out in — submitted the false they held before.
     agreed,
     ageConfirmed,
+    challenge.token,
+    challenge.reset,
     decideFirstSync,
     dispatch,
   ]);
@@ -196,12 +229,25 @@ export function useAccountLogic() {
     [decideFirstSync, dispatch],
   );
 
+  /** Puts the widget into asking for the reset action. Nothing is sent yet. */
+  const beginReset = useCallback(() => {
+    setFailed([]);
+    setResetSent(false);
+    setResetting(true);
+  }, []);
+
+  const cancelReset = useCallback(() => setResetting(false), []);
+
   const forgotPassword = useCallback(async () => {
     setBusy(true);
-    await requestPasswordReset(email.trim());
+    await requestPasswordReset(email.trim(), challenge.token);
+    // Silent whether or not that address has an account, as it has always been: a different
+    // answer here would turn the sheet into a way to find out who is registered.
     setResetSent(true);
+    setResetting(false);
+    challenge.reset();
     setBusy(false);
-  }, [email]);
+  }, [email, challenge.token, challenge.reset]);
 
   const leave = useCallback(async () => {
     setBusy(true);
@@ -552,7 +598,12 @@ export function useAccountLogic() {
     providers,
     signInWith,
     resetSent,
+    resetting,
+    beginReset,
+    cancelReset,
     forgotPassword,
+    challenge,
+    canSendReset: email.trim().length > 0 && challenge.satisfied,
     /** Undefined on a server that predates the field; treated as confirmed. */
     emailConfirmed: user?.emailVerified !== false,
     /** Set once a link is outstanding, which is what turns the row into its "sent" state. */
@@ -575,7 +626,12 @@ export function useAccountLogic() {
     canSubmit:
       email.trim().length > 0 &&
       password.length > 0 &&
-      (mode === "SIGN_IN" || (agreed && ageConfirmed)),
+      (mode === "SIGN_IN" || (agreed && ageConfirmed)) &&
+      // Unsolved, or the site key not yet known. The second half matters: without it the
+      // first attempt after a cold launch would post before this build learned a token was
+      // required, and be refused with a 403 nothing on screen could account for.
+      !resetting &&
+      challenge.satisfied,
     submit,
     busy,
     failed,

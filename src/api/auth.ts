@@ -44,6 +44,18 @@ export interface AuthProvider {
   readonly displayName: string;
 }
 
+/**
+ * Whether a bot check stands in front of sign-in, and with which site key.
+ *
+ * Asked for rather than shipped in the binary, which is the whole reason it is an endpoint:
+ * a key baked into a build could never be rotated or switched off without a store release.
+ * Optional, so a build talking to a server that predates it reads "no check" and goes on
+ * working -- the server would not be asking for a token either.
+ */
+export interface Challenge {
+  readonly siteKey?: string | null;
+}
+
 interface SessionPayload {
   accessToken?: string;
   refreshToken?: string;
@@ -63,14 +75,20 @@ export async function signIn(
   email: string,
   password: string,
   rememberMe: boolean,
+  turnstileToken: string | null,
 ): Promise<AccountUser> {
   return adopt(
     await request<SessionPayload>("/api/v1/auth/login", {
       method: "POST",
-      body: { email, password, rememberMe },
+      body: { email, password, rememberMe, turnstileToken },
       noRetry: true,
     }),
   );
+}
+
+/** Null site key, or an absent one, means no check and no token to send. */
+export async function fetchChallenge(): Promise<Challenge> {
+  return request<Challenge>("/api/v1/auth/challenge");
 }
 
 /**
@@ -85,11 +103,12 @@ export async function createAccount(
   displayName: string,
   acceptedTerms: boolean,
   confirmedAge: boolean,
+  turnstileToken: string | null,
 ): Promise<AccountUser> {
   return adopt(
     await request<SessionPayload>("/api/v1/auth/register", {
       method: "POST",
-      body: { email, password, displayName, acceptedTerms, confirmedAge },
+      body: { email, password, displayName, acceptedTerms, confirmedAge, turnstileToken },
       noRetry: true,
     }),
   );
@@ -188,10 +207,13 @@ export async function completeExternalSignIn(code: string): Promise<AccountUser>
 }
 
 /** Always resolves: a different answer for a registered address would leak who has one. */
-export async function requestPasswordReset(email: string): Promise<void> {
+export async function requestPasswordReset(
+  email: string,
+  turnstileToken: string | null,
+): Promise<void> {
   await request("/api/v1/auth/forgot-password", {
     method: "POST",
-    body: { email },
+    body: { email, turnstileToken },
     noRetry: true,
   }).catch(() => undefined);
 }

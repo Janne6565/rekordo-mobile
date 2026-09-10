@@ -1,5 +1,6 @@
 import { KeyboardLift } from "@/components/KeyboardLift";
 import { RisingSheet } from "@/components/RisingSheet";
+import { ChallengeGate } from "@/features/auth/ChallengeGate";
 import type { useAccountLogic } from "@/features/auth/useAccountLogic";
 import { colors, fonts } from "@/theme/colors";
 import { passwordStrength } from "@janne6565/rekordo-shared";
@@ -106,6 +107,11 @@ export function EmailAuthSheet({ logic, onClose }: EmailAuthSheetProps) {
               </Toggle>
             )}
 
+            {/* One widget for all three actions the sheet can take. It re-draws itself when
+                the action changes, because a token is only good for the endpoint it was
+                solved for. */}
+            <ChallengeGate challenge={logic.challenge} />
+
             {logic.failed.map((error) => (
               <Text key={error} style={styles.error} accessibilityRole="alert">
                 {errorText(error, t)}
@@ -117,20 +123,50 @@ export function EmailAuthSheet({ logic, onClose }: EmailAuthSheetProps) {
                 silent, so it can never be the thing that explains. */}
             {!registering && <Text style={styles.footnote}>{t("auth.resetNeedsConfirmed")}</Text>}
 
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void logic.submit()}
-              disabled={!logic.canSubmit || logic.busy}
-              style={[styles.primary, (!logic.canSubmit || logic.busy) && styles.dim]}
-            >
-              {logic.busy ? (
-                <ActivityIndicator size="small" color={colors.paper} />
-              ) : (
-                <Text style={styles.primaryText}>
-                  {registering ? t("auth.create") : t("auth.signIn")}
-                </Text>
-              )}
-            </Pressable>
+            {logic.resetting ? (
+              /*
+               * "Forgot?" cannot fire off a press any more: the reset endpoint wants a token
+               * solved for its own action, so the widget above has to be answered first. Two
+               * taps instead of one, which is the cost of the check being there at all.
+               */
+              <>
+                <Text style={styles.footnote}>{t("auth.resetLede")}</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => void logic.forgotPassword()}
+                  disabled={!logic.canSendReset || logic.busy}
+                  style={[styles.primary, (!logic.canSendReset || logic.busy) && styles.dim]}
+                >
+                  {logic.busy ? (
+                    <ActivityIndicator size="small" color={colors.paper} />
+                  ) : (
+                    <Text style={styles.primaryText}>{t("auth.sendResetLink")}</Text>
+                  )}
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={logic.cancelReset}
+                  style={styles.secondary}
+                >
+                  <Text style={styles.secondaryText}>{t("common.cancel")}</Text>
+                </Pressable>
+              </>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => void logic.submit()}
+                disabled={!logic.canSubmit || logic.busy}
+                style={[styles.primary, (!logic.canSubmit || logic.busy) && styles.dim]}
+              >
+                {logic.busy ? (
+                  <ActivityIndicator size="small" color={colors.paper} />
+                ) : (
+                  <Text style={styles.primaryText}>
+                    {registering ? t("auth.create") : t("auth.signIn")}
+                  </Text>
+                )}
+              </Pressable>
+            )}
           </ScrollView>
         </RisingSheet>
       </KeyboardLift>
@@ -187,7 +223,7 @@ function PasswordInput({
       <View style={styles.labelRow}>
         <Text style={styles.label}>{t("auth.password")}</Text>
         {!registering && (
-          <Pressable accessibilityRole="button" onPress={() => void logic.forgotPassword()}>
+          <Pressable accessibilityRole="button" onPress={logic.beginReset}>
             <Text style={styles.forgot}>{t("auth.forgot")}</Text>
           </Pressable>
         )}
@@ -377,5 +413,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   primaryText: { color: colors.paper, fontSize: 15, fontWeight: "600" },
+  /* The way back out of the reset step. Text on paper, so it never competes with the send. */
+  secondary: { height: 44, alignItems: "center", justifyContent: "center" },
+  secondaryText: { fontSize: 13.5, fontWeight: "500", color: colors.inkMuted },
   dim: { opacity: 0.5 },
 });
