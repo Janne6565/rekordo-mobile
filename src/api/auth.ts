@@ -54,6 +54,15 @@ export interface AuthProvider {
  */
 export interface Challenge {
   readonly siteKey?: string | null;
+  /**
+   * Whether the server will actually turn a request away without a solved challenge.
+   *
+   * A site key with this false is the rollout state: draw the widget and send what it
+   * gives you, but do not gate the button on it. It is told rather than inferred, because
+   * a widget that failed to load must not block a submit the server would have accepted.
+   * Absent reads as false, which is the safe way for an older build to read a newer server.
+   */
+  readonly enforced?: boolean;
 }
 
 interface SessionPayload {
