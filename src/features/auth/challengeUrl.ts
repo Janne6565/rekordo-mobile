@@ -16,8 +16,24 @@ import { API_BASE } from "@/api/config";
  * The page is `turnstile.html` in the frontend's `public/`, which nginx serves as a real file
  * before it falls through to the SPA.
  */
-export function challengeUrl(action: ChallengeAction, language: string): string {
-  const query = new URLSearchParams({ action, lang: language });
+export function challengeUrl(
+  action: ChallengeAction,
+  language: string,
+  generation: number,
+): string {
+  /*
+   * The generation is in the URL, not just the webview's key, and it earns its place twice.
+   *
+   * Remounting a webview at an unchanged URL is exactly the case a cache is designed to
+   * serve from, so a reset could hand back the same spent document. Worse, the page carried
+   * no Cache-Control for a while: anyone who opened the app before it was deployed had a
+   * cached 200 of index.html under this URL, and went on being served the SPA -- rendering
+   * its own "Not Found" inside a 72-pixel box -- long after the real page existed.
+   *
+   * A URL that changes cannot be answered from a stale entry. The server sends no-store now
+   * as well; this is the half that does not wait for a deploy to take effect.
+   */
+  const query = new URLSearchParams({ action, lang: language, n: String(generation) });
   return `${API_BASE}/turnstile.html?${query.toString()}`;
 }
 

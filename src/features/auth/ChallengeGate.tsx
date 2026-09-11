@@ -22,7 +22,10 @@ export function ChallengeGate({ challenge }: { challenge: Challenge }) {
   const { t, i18n } = useTranslation();
   const { siteKey, action } = challenge;
 
-  const uri = useMemo(() => challengeUrl(action, i18n.language), [action, i18n.language]);
+  const uri = useMemo(
+    () => challengeUrl(action, i18n.language, challenge.generation),
+    [action, i18n.language, challenge.generation],
+  );
 
   // The page fetches the site key itself, but there is no reason to load it at all when the
   // app already knows the server has the check switched off.
