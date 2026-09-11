@@ -1,9 +1,8 @@
 import {
-  CHALLENGE_BASE_URL,
   CHALLENGE_HEIGHT,
   type ChallengeMessage,
-  challengeHtml,
-} from "@/features/auth/challengeHtml";
+  challengeUrl,
+} from "@/features/auth/challengeUrl";
 import type { Challenge } from "@/features/auth/useChallenge";
 import { colors, fonts } from "@/theme/colors";
 import { useMemo } from "react";
@@ -14,53 +13,69 @@ import { WebView } from "react-native-webview";
 /**
  * The bot check, in the only thing that can render it.
  *
- * `baseUrl` is not decoration: Turnstile refuses to draw on a hostname that is not on the
- * widget's domain list, and a document loaded from a string has no hostname at all. It has
- * to name a domain the widget allows, and the backend's approved-hostname list has to
- * contain the same value, because that is what siteverify will report the challenge as
- * having been solved on.
+ * The page is loaded by URL from the app's own domain. It used to be an HTML string with a
+ * `baseUrl` pointing at production, which looks equivalent and is not: a string-loaded
+ * document has no real origin, Turnstile would not run in one, and the sheet showed "the
+ * check could not be loaded" on every phone while the identical widget worked in a browser.
  */
 export function ChallengeGate({ challenge }: { challenge: Challenge }) {
   const { t, i18n } = useTranslation();
   const { siteKey, action } = challenge;
 
-  const html = useMemo(
-    () => (siteKey === null ? null : challengeHtml(siteKey, action, i18n.language)),
-    [siteKey, action, i18n.language],
-  );
+  const uri = useMemo(() => challengeUrl(action, i18n.language), [action, i18n.language]);
 
-  if (html === null) return null;
+  // The page fetches the site key itself, but there is no reason to load it at all when the
+  // app already knows the server has the check switched off.
+  if (siteKey === null) return null;
 
   return (
     <View style={styles.holder}>
       <WebView
-        // A new document per generation, which is how a spent token is replaced: the reset
+        // A fresh document per generation, which is how a spent token is replaced: the reset
         // has to happen inside the page, and remounting is one mechanism instead of two.
         key={`${action}-${challenge.generation}`}
-        source={{ html, baseUrl: CHALLENGE_BASE_URL }}
+        source={{ uri }}
         onMessage={(event) => {
           let message: ChallengeMessage;
           try {
             message = JSON.parse(event.nativeEvent.data) as ChallengeMessage;
           } catch {
-            // Nothing else posts into this webview, so an unparseable message means the
-            // document is not the one written here. Treated as a failure rather than ignored.
-            challenge.onMessage({ type: "error" });
+            // Nothing else posts into this webview, so an unparseable message means the page
+            // is not the one we serve. Treated as a failure rather than ignored.
+            challenge.onMessage({ type: "error", code: "unparseable" });
             return;
           }
           challenge.onMessage(message);
         }}
+        // The page failed to load at all -- offline, DNS, a captive portal. Distinct from the
+        // widget failing inside a page that did load, and it has to be reported or the sheet
+        // sits with an empty box and says nothing.
+        onError={() => challenge.onMessage({ type: "error", code: "page-unreachable" })}
+        onHttpError={(event) =>
+          challenge.onMessage({
+            type: "error",
+            code: `page-${event.nativeEvent.statusCode}`,
+          })
+        }
         // The widget is the whole page and it is exactly this tall, so a scroll gesture here
         // would only fight the sheet it sits in.
         scrollEnabled={false}
-        // Nothing in the document is worth a system share sheet or a text selection.
         style={styles.web}
-        androidLayerType="software"
-        // Without this the page renders on white and the sheet shows a bright rectangle
-        // until the widget paints.
+        // Without this the page renders on white and the sheet shows a bright rectangle until
+        // the widget paints.
         backgroundColor={colors.paper}
       />
-      {challenge.failed && <Text style={styles.error}>{t("auth.challengeUnavailable")}</Text>}
+      {challenge.failed && (
+        <Text style={styles.error}>
+          {t("auth.challengeUnavailable")}
+          {/* The code, small and in brackets. Cloudflare's own widget shows one for the same
+              reason: the person looking at this screen is never the person who can read a
+              log, and "110200" is the difference between a bug and a bad network. */}
+          {challenge.failureCode !== null && (
+            <Text style={styles.code}> ({challenge.failureCode})</Text>
+          )}
+        </Text>
+      )}
     </View>
   );
 }
@@ -74,4 +89,5 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     color: colors.accent,
   },
+  code: { color: colors.inkSubtle },
 });

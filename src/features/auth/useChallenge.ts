@@ -1,5 +1,5 @@
 import { fetchChallenge } from "@/api/auth";
-import type { ChallengeAction, ChallengeMessage } from "@/features/auth/challengeHtml";
+import type { ChallengeAction, ChallengeMessage } from "@/features/auth/challengeUrl";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
 
@@ -19,6 +19,11 @@ export interface Challenge {
   readonly token: string | null;
   /** The widget could not be drawn -- worth saying, because nothing is visible. */
   readonly failed: boolean;
+  /**
+   * Why, when the page could say. Cloudflare's own code (110200 is a domain the widget does
+   * not allow) or one of the page's own names for a failure it can identify itself.
+   */
+  readonly failureCode: string | null;
   /** Wired to the webview by {@link ChallengeGate}. */
   readonly onMessage: (message: ChallengeMessage) => void;
   /**
@@ -51,6 +56,7 @@ export function useChallenge(action: ChallengeAction): Challenge {
 
   const [token, setToken] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  const [failureCode, setFailureCode] = useState<string | null>(null);
   const [generation, setGeneration] = useState(0);
   const latest = useRef(0);
 
@@ -63,6 +69,7 @@ export function useChallenge(action: ChallengeAction): Challenge {
       case "token":
         setToken(message.token);
         setFailed(false);
+        setFailureCode(null);
         break;
       case "expired":
         // Five minutes is easily long enough for somebody to be interrupted mid-form. A
@@ -72,6 +79,7 @@ export function useChallenge(action: ChallengeAction): Challenge {
       case "error":
         setToken(null);
         setFailed(true);
+        setFailureCode(message.code ?? null);
         break;
     }
   }, []);
@@ -79,6 +87,7 @@ export function useChallenge(action: ChallengeAction): Challenge {
   const reset = useCallback(() => {
     setToken(null);
     setFailed(false);
+    setFailureCode(null);
     latest.current += 1;
     setGeneration(latest.current);
   }, []);
@@ -95,6 +104,7 @@ export function useChallenge(action: ChallengeAction): Challenge {
     satisfied: query.isPending ? false : siteKey === null || !enforced || token !== null,
     token,
     failed,
+    failureCode,
     onMessage,
     generation,
     reset,
