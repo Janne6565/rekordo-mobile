@@ -46,6 +46,62 @@ export function challengeUrl(
  */
 export const CHALLENGE_HEIGHT = 72;
 
+/**
+ * Development only: forwards the page's console, and a snapshot of what its environment
+ * actually looks like, out to Metro.
+ *
+ * Runs before the document's own scripts, so it catches what the Turnstile script says while
+ * loading rather than only what survives to the end. The environment lines are the ones that
+ * settle arguments: whether the user-agent override took effect, whether cookies and storage
+ * are writable, and whether the frame thinks it is secure -- each of which has been guessed at
+ * rather than known at some point today.
+ *
+ * Stripped in production by the `__DEV__` guard at the call site.
+ */
+export const CHALLENGE_DEBUG_JS = `
+(function () {
+  function send(line) {
+    if (window.ReactNativeWebView) {
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: "log", line: String(line) }));
+    }
+  }
+  ["log", "warn", "error"].forEach(function (level) {
+    var original = console[level];
+    console[level] = function () {
+      try {
+        send("[" + level + "] " + Array.prototype.map.call(arguments, function (a) {
+          try { return typeof a === "object" ? JSON.stringify(a) : String(a); }
+          catch (e) { return String(a); }
+        }).join(" "));
+      } catch (e) {}
+      original.apply(console, arguments);
+    };
+  });
+  window.addEventListener("error", function (e) {
+    send("[uncaught] " + (e && e.message) + " @ " + (e && e.filename) + ":" + (e && e.lineno));
+  });
+  window.addEventListener("unhandledrejection", function (e) {
+    send("[rejection] " + (e && e.reason));
+  });
+  var cookieWorks = false;
+  try {
+    document.cookie = "rk_probe=1; SameSite=None; Secure";
+    cookieWorks = document.cookie.indexOf("rk_probe") !== -1;
+  } catch (e) {}
+  var storageWorks = false;
+  try {
+    window.localStorage.setItem("rk_probe", "1");
+    storageWorks = window.localStorage.getItem("rk_probe") === "1";
+  } catch (e) {}
+  send("[env] ua=" + navigator.userAgent);
+  send("[env] origin=" + window.location.origin + " secure=" + window.isSecureContext +
+       " cookieEnabled=" + navigator.cookieEnabled + " cookieWritable=" + cookieWorks +
+       " localStorage=" + storageWorks);
+  true;
+})();
+true;
+`;
+
 /** Kept in step with the backend's {@code ChallengeAction} wire names. */
 export type ChallengeAction =
   | "register"
@@ -61,6 +117,13 @@ export type ChallengeAction =
 export type ChallengeMessage =
   | { readonly type: "token"; readonly token: string }
   | { readonly type: "expired" }
+  /**
+   * Development only: whatever the page logged, and what its environment looks like.
+   *
+   * A webview has no console anybody can see, which is why three separate guesses were needed
+   * to learn what one error code would have said outright. This forwards it to Metro.
+   */
+  | { readonly type: "log"; readonly line: string }
   /**
    * The code is Cloudflare's, or one of the page's own for the failures it can name itself.
    * Carried rather than swallowed: "the check could not be loaded" with nothing behind it

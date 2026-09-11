@@ -1,4 +1,5 @@
 import {
+  CHALLENGE_DEBUG_JS,
   CHALLENGE_HEIGHT,
   type ChallengeMessage,
   challengeUrl,
@@ -38,6 +39,22 @@ export function ChallengeGate({ challenge }: { challenge: Challenge }) {
         // has to happen inside the page, and remounting is one mechanism instead of two.
         key={`${action}-${challenge.generation}`}
         source={{ uri }}
+        /*
+         * The one prop this whole thing turned on, and it is not about origins in the security
+         * sense at all.
+         *
+         * Turnstile draws its challenge into an iframe built with `srcdoc`. The default
+         * whitelist is ['http://*', 'https://*'], `about:srcdoc` matches neither, so the
+         * webview refused the navigation -- logging "Can't open url: about:srcdoc" where
+         * nobody could see it -- and the challenge iframe never loaded. The widget sat on
+         * "Verifying" forever and eventually reported 300031, which reads as "you look like a
+         * bot" and sent three separate investigations in the wrong direction.
+         *
+         * Widening this is not a hole: the webview only ever loads our own page, which is
+         * fixed in `challengeUrl` and not user-supplied, and nothing in it navigates anywhere.
+         * react-native-turnstile sets exactly this, for exactly this reason.
+         */
+        originWhitelist={["*"]}
         onMessage={(event) => {
           let message: ChallengeMessage;
           try {
@@ -48,8 +65,17 @@ export function ChallengeGate({ challenge }: { challenge: Challenge }) {
             challenge.onMessage({ type: "error", code: "unparseable" });
             return;
           }
+          if (message.type === "log") {
+            // Development only. A webview has no console anybody can see, and that is exactly
+            // why this took three guesses to narrow down.
+            if (__DEV__) console.log("[turnstile]", message.line);
+            return;
+          }
           challenge.onMessage(message);
         }}
+        // Runs before the page's own scripts, so it catches what the Turnstile script says on
+        // the way up rather than only what is left at the end.
+        injectedJavaScriptBeforeContentLoaded={__DEV__ ? CHALLENGE_DEBUG_JS : undefined}
         // The page failed to load at all -- offline, DNS, a captive portal. Distinct from the
         // widget failing inside a page that did load, and it has to be reported or the sheet
         // sits with an empty box and says nothing.
@@ -60,6 +86,22 @@ export function ChallengeGate({ challenge }: { challenge: Challenge }) {
             code: `page-${event.nativeEvent.statusCode}`,
           })
         }
+        /*
+         * The cookie store is the whole difference between this and a browser tab.
+         *
+         * The same page solves instantly in Safari on the same simulator and hangs on
+         * "Verifying" here, which rules out both our page and the environment. Turnstile runs
+         * its challenge in a challenges.cloudflare.com iframe, and that iframe is third-party
+         * to whatever embeds it -- so it needs cookies a webview does not hand out by default.
+         * WKWebView keeps an isolated ephemeral store unless told to use the app's; Android's
+         * blocks third-party cookies outright.
+         *
+         * This is the incompatibility react-native-turnstile exists to work around. Its own
+         * answer is the hosted page, which we already have -- these two props are the rest of
+         * it, and the half that a hosted page cannot supply on its own.
+         */
+        sharedCookiesEnabled
+        thirdPartyCookiesEnabled
         // The widget is the whole page and it is exactly this tall, so a scroll gesture here
         // would only fight the sheet it sits in.
         scrollEnabled={false}
