@@ -1,3 +1,4 @@
+import { starGlyphs } from "@/domain/rating";
 import { colors } from "@/theme/colors";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
@@ -62,18 +63,18 @@ export function CopyTile({
 }
 
 /**
- * Glyphs rather than five icons: at 10px a stroked star is a shape with a weight to it,
- * and fifteen of them per row of tiles is a lot of drawing for something the eye takes in
- * as a bar. Whole stars only — a half at this size is a smudge.
+ * The glyphs come from `starGlyphs`, which the shared detail sheet reads too: a friend's
+ * shelf and your own draw the same stars, and rounding them in two places is how the two end
+ * up disagreeing about what a 3 looks like. Whole stars only — a half at this size is a smudge.
  */
 function TileRating({ rating }: { readonly rating: number | null }) {
-  if (rating === null || rating <= 0) return null;
-  const filled = Math.min(5, Math.round(rating));
+  const stars = starGlyphs(rating);
+  if (stars === null) return null;
 
   return (
     <Text style={styles.rating} numberOfLines={1}>
-      <Text style={styles.ratingOn}>{"\u2605".repeat(filled)}</Text>
-      <Text style={styles.ratingOff}>{"\u2606".repeat(5 - filled)}</Text>
+      <Text style={styles.ratingOn}>{stars.on}</Text>
+      <Text style={styles.ratingOff}>{stars.off}</Text>
     </Text>
   );
 }

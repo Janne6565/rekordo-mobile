@@ -335,6 +335,13 @@ function Grid({
               previewUri={copy.id === undefined ? null : (photos.get(copy.id) ?? null)}
             />
           }
+          /*
+           * The same stars the owner's own shelf draws, and the same silence where there
+           * are none. The server has already decided whether this viewer may see them, so
+           * there is nothing to weigh up here: a null is a null, whether the copy is
+           * unrated or its owner keeps the stars to themselves.
+           */
+          rating={copy.rating ?? null}
           title={copy.title ?? "—"}
           subtitle={[
             copy.format ? FORMAT_LABELS[copy.format as Format] : undefined,

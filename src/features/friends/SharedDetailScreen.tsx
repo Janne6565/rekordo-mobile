@@ -1,6 +1,7 @@
 import type { SharedCopy, SharedWish } from "@/api/friends";
 import { ReleaseArt } from "@/components/ReleaseArt";
 import { formatMoney } from "@/domain/currency";
+import { starGlyphs } from "@/domain/rating";
 import { CoverSheet } from "@/features/detail/CoverSheet";
 import { usePageFlip } from "@/features/detail/usePageFlip";
 import { useFriendProfileLogic } from "@/features/friends/useFriendsLogic";
@@ -132,6 +133,14 @@ export function SharedDetailScreen({
       .map((code) => CONDITION_SHORT[code as keyof typeof CONDITION_SHORT] ?? code)
       .join(" · ");
     add(t("sharedDetail.mediaSleeve"), grades);
+    /*
+     * Read only, and gone entirely when there are no stars to show — the same rule the
+     * tiles follow, and the same one that keeps "unrated" and "not shared" from being told
+     * apart. `starGlyphs` returns the run that is lit and the run that is not; the facts
+     * grid is one line of type, so they are joined rather than coloured separately.
+     */
+    const stars = starGlyphs(copy.rating);
+    add(t("sharedDetail.rating"), stars === null ? undefined : `${stars.on}${stars.off}`);
     add(
       t("sharedDetail.paid"),
       // Only when the owner shares prices, and only when there is one: a JSON null is not
