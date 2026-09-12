@@ -330,6 +330,7 @@ const enCommon = {
     rowBody: "Who can see your collection, your wishlist and what you paid",
     handleLabel: "Handle",
     money: "Money",
+    stars: "Ratings",
     perCopyNote:
       "Single copies can be hidden one by one from the copy screen, whatever these settings say.",
     findable: {
@@ -357,6 +358,11 @@ const enCommon = {
       title: "Show prices and totals",
       on: "On. What you paid travels with the copies anybody can already see.",
       off: "Off. What you paid stays yours even on a public shelf.",
+    },
+    ratings: {
+      title: "Show your ratings",
+      on: "On. Your stars travel with the copies anybody can already see.",
+      off: "Off. Your stars stay yours even on a public shelf.",
     },
     choice: {
       only_me: { title: "Only me", body: "Friends see your name and nothing else." },
@@ -1012,6 +1018,7 @@ const enCommon = {
     format: "Format",
     wanted: "Wanted",
     mediaSleeve: "Media · Sleeve",
+    rating: "Rating",
     paid: "Paid",
   },
   /* 26d: the titles under the sleeve, on every detail screen that has a release. */
@@ -1495,6 +1502,7 @@ const deCommon: CommonSchema = {
     rowBody: "Wer deine Sammlung, deine Wunschliste und deine Preise sehen darf",
     handleLabel: "Handle",
     money: "Geld",
+    stars: "Bewertungen",
     perCopyNote:
       "Einzelne Exemplare lassen sich unabh\u00e4ngig davon im Exemplar-Fenster verbergen.",
     findable: {
@@ -1518,6 +1526,11 @@ const deCommon: CommonSchema = {
     wishlist: {
       legend: "Deine Wunschliste",
       note: "Getrennt von der Sammlung. Die meisten geben diese weiter frei.",
+    },
+    ratings: {
+      title: "Deine Bewertungen zeigen",
+      on: "An. Deine Sterne reisen mit den Exemplaren mit, die ohnehin sichtbar sind.",
+      off: "Aus. Deine Sterne bleiben deine Sache, auch auf einem öffentlichen Regal.",
     },
     prices: {
       title: "Preise und Summen zeigen",
@@ -2191,6 +2204,7 @@ const deCommon: CommonSchema = {
     format: "Format",
     wanted: "Gesucht",
     mediaSleeve: "Medium · Hülle",
+    rating: "Bewertung",
     paid: "Bezahlt",
   },
   tracklist: {

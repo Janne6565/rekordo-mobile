@@ -110,6 +110,14 @@ export interface SharedCopy {
   condition?: string;
   /** Sleeve grade — graded separately from the media since design 8d. */
   sleeveCondition?: string;
+  /**
+   * One to five stars, or null.
+   *
+   * Null both when the copy is unrated and when the owner has not turned ratings on, and
+   * the server will not say which. Drawing nothing in either case is what keeps the two
+   * indistinguishable, so nothing here may explain the difference to the viewer.
+   */
+  rating?: number | null;
   pricePaidCents?: number;
   currency?: string;
   /** When they filed it. Shown as a footnote on the detail sheet, never as a fact. */
@@ -140,6 +148,8 @@ export interface SharingSettings {
   collectionVisibility?: Visibility;
   wishlistVisibility?: Visibility;
   pricesPublic?: boolean;
+  /** Whether the stars travel with the copies a viewer may already see. Off until asked. */
+  ratingsShared?: boolean;
   handleChangesRemaining?: number;
 }
 
@@ -181,11 +191,20 @@ export const friendsApi = {
 
   sharing: () => request<SharingSettings>("/api/v1/sharing"),
 
+  /**
+   * Every switch on the screen, every time. The server takes `ratingsShared` as optional so
+   * that a phone from before ratings existed does not silently turn them off; this one knows
+   * about it, so it always says what it means rather than leaving the field to a default.
+   */
   updateSharing: (
     settings: Required<
       Pick<
         SharingSettings,
-        "collectionVisibility" | "wishlistVisibility" | "pricesPublic" | "findable"
+        | "collectionVisibility"
+        | "wishlistVisibility"
+        | "pricesPublic"
+        | "ratingsShared"
+        | "findable"
       >
     >,
   ) => request<SharingSettings>("/api/v1/sharing", { method: "PUT", body: settings }),

@@ -134,6 +134,28 @@ export function SharingScreen() {
             </View>
           </View>
 
+          {/* Its own section rather than a second row under Money: what a record is worth to
+              you and what it cost are two different confidences, and somebody who opens the
+              prices off is not thereby saying anything about the stars. */}
+          <Text style={styles.sectionLabel}>{t("sharing.stars")}</Text>
+          <View style={styles.card}>
+            <View style={styles.row}>
+              <View style={styles.rowText}>
+                <Text style={styles.rowTitle}>{t("sharing.ratings.title")}</Text>
+                <Text style={styles.rowBody}>
+                  {settings.ratingsShared === true
+                    ? t("sharing.ratings.on")
+                    : t("sharing.ratings.off")}
+                </Text>
+              </View>
+              <Switch
+                value={settings.ratingsShared ?? false}
+                onValueChange={(ratingsShared) => logic.set({ ratingsShared })}
+                trackColor={{ true: colors.ink, false: colors.line }}
+              />
+            </View>
+          </View>
+
           <View style={styles.footnote}>
             <EyeOff size={15} color={colors.inkMuted} strokeWidth={1.75} />
             <Text style={styles.footnoteText}>{t("sharing.perCopyNote")}</Text>

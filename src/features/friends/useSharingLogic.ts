@@ -1,4 +1,5 @@
 import { type SharingSettings, type Visibility, friendsApi } from "@/api/friends";
+import { sharingPayload } from "@/features/friends/sharingPayload";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 
@@ -8,13 +9,7 @@ export function useSharingLogic() {
   const settings = useQuery({ queryKey: ["sharing"], queryFn: friendsApi.sharing });
 
   const save = useMutation({
-    mutationFn: (next: SharingSettings) =>
-      friendsApi.updateSharing({
-        collectionVisibility: next.collectionVisibility ?? "FRIENDS",
-        wishlistVisibility: next.wishlistVisibility ?? "FRIENDS",
-        pricesPublic: next.pricesPublic ?? false,
-        findable: next.findable ?? true,
-      }),
+    mutationFn: (next: SharingSettings) => friendsApi.updateSharing(sharingPayload(next)),
     onSuccess: async (saved) => {
       queryClient.setQueryData(["sharing"], saved);
       // A shelf that just closed has to stop showing on every profile already cached.
