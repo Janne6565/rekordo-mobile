@@ -29,15 +29,16 @@ describe("sharingPayload", () => {
   });
 
   /**
-   * A settings object that has not been read yet must not be sent as "share everything".
-   * Ratings default off, like prices.
+   * A settings object that has not been read yet must not be sent as "share everything" --
+   * but it must not quietly close something either. Each fallback is the server's own
+   * default, which is cautious for the lists and the prices and open for the ratings.
    */
-  it("falls back to the cautious answer for anything the server did not say", () => {
+  it("falls back to the server's own defaults for anything it did not say", () => {
     expect(sharingPayload({})).toEqual({
       collectionVisibility: "FRIENDS",
       wishlistVisibility: "FRIENDS",
       pricesPublic: false,
-      ratingsShared: false,
+      ratingsShared: true,
       findable: true,
     });
   });

@@ -149,7 +149,7 @@ export function SharingScreen() {
                 </Text>
               </View>
               <Switch
-                value={settings.ratingsShared ?? false}
+                value={settings.ratingsShared ?? true}
                 onValueChange={(ratingsShared) => logic.set({ ratingsShared })}
                 trackColor={{ true: colors.ink, false: colors.line }}
               />
