@@ -1,3 +1,4 @@
+import { DragSortArea, DragSortItem, useDragSort } from "@/components/DragSort";
 import { ReleaseArt } from "@/components/ReleaseArt";
 import { WishRow, wishCardStyle } from "@/components/WishRow";
 import { formatRelativeTime } from "@/domain/relativeTime";
@@ -19,29 +20,22 @@ import {
   Users,
   X,
 } from "lucide-react-native";
-import { useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Animated,
-  LayoutAnimation,
-  type LayoutChangeEvent,
-  PanResponder,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
+import Animated, { useAnimatedRef } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+/** The list's own padding, which the drag needs as numbers rather than as a style. */
+const LIST = { padding: 18, gap: 9 } as const;
 
 /**
  * Screen 16a — the wishlist.
  *
  * A plain scrolling column rather than a FlatList: the list is two dozen rows at most, and
  * a row that can be picked up and carried needs its neighbours measured, which is exactly
- * what virtualisation takes away.
+ * what virtualisation takes away. That is also why this list measures its own rows and the
+ * shelf does not — an entry with a note is taller than one without.
  */
 export function WishlistScreen() {
   const { t, i18n } = useTranslation();
@@ -52,61 +46,44 @@ export function WishlistScreen() {
   const [sheet, setSheet] = useState<"MANUAL" | WishlistItem | null>(null);
   const [sortOpen, setSortOpen] = useState(false);
 
-  /** Which row is in the air, and how far it has been carried. */
-  const [lifted, setLifted] = useState<number | null>(null);
-  const shift = useRef(new Animated.Value(0)).current;
-  /** Row geometry, filled in by onLayout — the drag needs neighbours, not just itself. */
-  const rows = useRef<{ y: number; height: number }[]>([]);
-  const carried = useRef(0);
+  const listRef = useAnimatedRef<Animated.ScrollView>();
+  const drag = useDragSort({
+    count: logic.items.length,
+    scrollRef: listRef,
+    origin: { x: LIST.padding, y: LIST.padding },
+    // Rows are not all one height — an entry with a note is taller — so each reports its
+    // own rectangle rather than being derived from one measured row.
+    measure: true,
+    // A drag reorders the *whole* list, and an index into a narrowed one points at the
+    // wrong entry, so a filtered list is read rather than arranged.
+    enabled: !logic.filtering,
+    onDrop: logic.reorder,
+  });
 
-  const measure = (index: number) => (event: LayoutChangeEvent) => {
-    const { y, height } = event.nativeEvent.layout;
-    rows.current[index] = { y, height };
-  };
-
-  /**
-   * Where a row carried this far would land.
-   *
-   * Walks the measured rows and counts how many midpoints the dragged row's own midpoint
-   * has passed. Measured rather than assumed uniform: an entry with a note is taller than
-   * one without, and a drag that miscounts by a row is a drag nobody trusts.
-   */
-  const targetIndex = (from: number, dy: number): number => {
-    const own = rows.current[from];
-    if (own === undefined) return from;
-    const centre = own.y + own.height / 2 + dy;
-    let index = 0;
-    for (let i = 0; i < logic.items.length; i += 1) {
-      const row = rows.current[i];
-      if (row !== undefined && centre > row.y + row.height / 2) index = i;
-    }
-    return index;
-  };
-
-  const responder = (index: number) =>
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => lifted === index,
-      onMoveShouldSetPanResponder: () => lifted === index,
-      onPanResponderMove: (_event, gesture) => {
-        carried.current = gesture.dy;
-        shift.setValue(gesture.dy);
-      },
-      onPanResponderRelease: () => {
-        const to = targetIndex(index, carried.current);
-        shift.setValue(0);
-        carried.current = 0;
-        setLifted(null);
-        if (to !== index) {
-          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-          logic.reorder(index, to);
+  const rowOf = useCallback(
+    (item: WishlistItem) => (
+      <WishRow
+        onPress={() => router.push({ pathname: "/wishlist/[wishId]", params: { wishId: item.id } })}
+        art={
+          /* The wanted format is the silhouette, not the artwork: an entry for the vinyl of
+             a record you already have on CD should look like the thing you are hunting. */
+          <ReleaseArt
+            release={{ coverArtUrl: logic.coverOf(item) }}
+            previewUri={logic.pictureOf(item)}
+            format={item.desiredFormat ?? "OTHER"}
+          />
         }
-      },
-      onPanResponderTerminate: () => {
-        shift.setValue(0);
-        carried.current = 0;
-        setLifted(null);
-      },
-    });
+        title={item.title}
+        subtitle={`${item.artistName}${item.year === null ? "" : ` · ${item.year}`}`}
+        note={item.note}
+        format={
+          item.desiredFormat === null ? t("wishlist.anyFormat") : FORMAT_LABELS[item.desiredFormat]
+        }
+        trailing={formatRelativeTime(item.createdAt, i18n.language)}
+      />
+    ),
+    [router, logic, t, i18n.language],
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -207,62 +184,34 @@ export function WishlistScreen() {
       ) : logic.noMatches ? (
         <Text style={styles.noMatches}>{t("wishlist.filterNoMatches")}</Text>
       ) : (
-        <ScrollView
-          contentContainerStyle={styles.list}
-          // A carried row must not take the list with it.
-          scrollEnabled={lifted === null}
-          refreshControl={
-            <RefreshControl
-              refreshing={logic.refreshing}
-              onRefresh={() => void logic.refetch()}
-              tintColor={colors.inkMuted}
-            />
-          }
+        <DragSortArea
+          drag={drag}
+          overlay={(index) => (
+            <View style={styles.row}>{rowOf(logic.items[index] as WishlistItem)}</View>
+          )}
         >
-          {logic.items.map((item, index) => (
-            <Animated.View
-              key={item.id}
-              onLayout={measure(index)}
-              {...responder(index).panHandlers}
-              style={[
-                styles.row,
-                lifted === index && styles.rowLifted,
-                // One transform, not two: a second `transform` key replaces the first, and
-                // splitting the lift across both styles would silently drop the scale.
-                lifted === index && { transform: [{ translateY: shift }, { scale: 1.015 }] },
-              ]}
-            >
-              <WishRow
-                onPress={() =>
-                  router.push({ pathname: "/wishlist/[wishId]", params: { wishId: item.id } })
-                }
-                // A drag reorders the *whole* list, and an index into a narrowed one points
-                // at the wrong entry — so a long press does nothing until the box is empty
-                // again rather than silently carrying somebody else's row.
-                onLongPress={logic.filtering ? undefined : () => setLifted(index)}
-                art={
-                  /* The wanted format is the silhouette, not the artwork: an entry for the
-                     vinyl of a record you already have on CD should look like the thing you
-                     are hunting. */
-                  <ReleaseArt
-                    release={{ coverArtUrl: logic.coverOf(item) }}
-                    previewUri={logic.pictureOf(item)}
-                    format={item.desiredFormat ?? "OTHER"}
-                  />
-                }
-                title={item.title}
-                subtitle={`${item.artistName}${item.year === null ? "" : ` · ${item.year}`}`}
-                note={item.note}
-                format={
-                  item.desiredFormat === null
-                    ? t("wishlist.anyFormat")
-                    : FORMAT_LABELS[item.desiredFormat]
-                }
-                trailing={formatRelativeTime(item.createdAt, i18n.language)}
+          <Animated.ScrollView
+            ref={listRef}
+            contentContainerStyle={styles.list}
+            onScroll={drag.onScroll}
+            scrollEventThrottle={16}
+            // A carried row must not take the list with it.
+            scrollEnabled={drag.carrying === null}
+            refreshControl={
+              <RefreshControl
+                refreshing={logic.refreshing}
+                onRefresh={() => void logic.refetch()}
+                tintColor={colors.inkMuted}
               />
-            </Animated.View>
-          ))}
-        </ScrollView>
+            }
+          >
+            {logic.items.map((item, index) => (
+              <DragSortItem key={item.id} index={index} style={styles.row}>
+                {rowOf(item)}
+              </DragSortItem>
+            ))}
+          </Animated.ScrollView>
+        </DragSortArea>
       )}
 
       {sheet !== null && (
@@ -385,18 +334,8 @@ const styles = StyleSheet.create({
   sortOption: { paddingHorizontal: 14, paddingVertical: 11 },
   sortOptionText: { fontSize: 13, color: colors.ink },
   sortOptionOn: { fontWeight: "700" },
-  list: { padding: 18, paddingBottom: 120, gap: 9 },
+  list: { padding: LIST.padding, paddingBottom: 120, gap: LIST.gap },
   row: wishCardStyle,
-  rowLifted: {
-    // The deck's carried row: lifted off the page and shadowed. The scale rides along with
-    // the drag's own transform above.
-    shadowColor: colors.ink,
-    shadowOpacity: 0.16,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 8,
-    zIndex: 2,
-  },
   empty: { flex: 1, alignItems: "center", paddingHorizontal: 30, paddingTop: 70 },
   emptyIcon: {
     width: 56,

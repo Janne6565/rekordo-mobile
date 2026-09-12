@@ -1,12 +1,19 @@
-import type { LibraryFilter } from "@/local/LocalStore";
 import { useStore } from "@/local/StoreProvider";
-import { readCatalogueGap } from "@/local/settings";
+import { readCatalogueGap, readLibrarySort, writeLibrarySort } from "@/local/settings";
 import { syncOutcomeCleared } from "@/store/authSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useSync } from "@/sync/SyncProvider";
-import { catalogueKeyOf, catalogueKeysOf, inRollPool } from "@janne6565/rekordo-shared";
-import type { Copy, Format, Release } from "@janne6565/rekordo-shared";
-import { useQuery } from "@tanstack/react-query";
+import {
+  applyCopyPatch,
+  catalogueKeyOf,
+  catalogueKeysOf,
+  hasArrangedOrder,
+  inRollPool,
+  libraryOrderWrites,
+  moveCopy,
+} from "@janne6565/rekordo-shared";
+import type { Copy, Format, LibrarySort, Release } from "@janne6565/rekordo-shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 
 export type FormatFilter = Format | "ALL";
@@ -19,8 +26,9 @@ export interface LibraryRow {
 export type LibraryLogic = ReturnType<typeof useLibraryLogic>;
 
 export function useLibraryLogic() {
-  const { store } = useStore();
+  const { store, clock } = useStore();
   const { syncNow } = useSync();
+  const queryClient = useQueryClient();
   const [format, setFormat] = useState<FormatFilter>("ALL");
   /**
    * 26c — the shelf's second axis, and the reason its filters are worth a sheet.
@@ -33,7 +41,6 @@ export function useLibraryLogic() {
    */
   const [minRating, setMinRating] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [sort] = useState<NonNullable<LibraryFilter["sort"]>>("ADDED_DESC");
   /**
    * 29e-5: the shelf filtered down to what the sign-in brought in.
    *
@@ -57,6 +64,16 @@ export function useLibraryLogic() {
     queryFn: () => readCatalogueGap(store),
   });
 
+  /**
+   * Which order the shelf is in, which is this device's own business.
+   *
+   * The arrangement itself syncs -- it is `Copy.sortIndex` -- but "I am sorting by artist
+   * to find something" is not a statement about the collection, and a laptop that
+   * rearranged itself because of it would be doing something nobody asked for.
+   */
+  const sortQuery = useQuery({ queryKey: ["librarySort"], queryFn: () => readLibrarySort(store) });
+  const sort: LibrarySort = sortQuery.data ?? "ADDED_DESC";
+
   const copiesQuery = useQuery({
     queryKey: ["copies", format, sort],
     queryFn: async () => {
@@ -75,8 +92,94 @@ export function useLibraryLogic() {
   }, [copiesQuery.data, minRating]);
   const arrived = new Set(outcome?.ids ?? []);
 
+  /**
+   * The order a drop just built, held until the store has caught up.
+   *
+   * Arranging writes a row per record and then re-reads the shelf, which is tens of
+   * milliseconds the tile would otherwise spend back where it started -- the one frame
+   * that would make the whole gesture feel like it had not been taken.
+   */
+  const [dropped, setDropped] = useState<readonly string[] | null>(null);
+  const shelf = useMemo(() => {
+    if (dropped === null) return all;
+    const byId = new Map(all.map((row) => [row.copy.id, row]));
+    const reordered = dropped
+      .map((id) => byId.get(id))
+      .filter((row): row is LibraryRow => row !== undefined);
+    // Anything the drop did not know about (a sync landed mid-carry) keeps its place at
+    // the end rather than disappearing.
+    const seen = new Set(dropped);
+    return [...reordered, ...all.filter((row) => !seen.has(row.copy.id))];
+  }, [all, dropped]);
+
+  /** A shelf is only arrangeable whole: see `arrange`. */
+  const filtered = format !== "ALL" || minRating !== null;
+
+  /**
+   * A record set down somewhere else.
+   *
+   * Renumbers the shelf *as it was on screen* and switches the order to `MANUAL` in one
+   * go. Switching is the point rather than a side effect: the order you were looking at
+   * when you picked a record up is the order you meant to adjust, so dragging on a shelf
+   * sorted by artist keeps that arrangement and moves one record within it. Dragging
+   * without switching would produce a move the next render undoes.
+   *
+   * Refused on a narrowed shelf, because a position in a narrowed list means nothing in
+   * the whole one -- the drag is disabled there rather than silently moving the wrong
+   * record.
+   */
+  const arrange = useMutation({
+    mutationFn: async ({ from, to }: { readonly from: number; readonly to: number }) => {
+      const next = moveCopy(shelf, from, to);
+      setDropped(next.map((row) => row.copy.id));
+      // One batch: the first drag on a shelf that has never been arranged renumbers every
+      // record on it, and `putCopy` in a loop is quadratic in the pending list.
+      await store.putCopies(
+        libraryOrderWrites(next.map((row) => row.copy)).map(({ copy, sortIndex }) =>
+          applyCopyPatch(copy, { sortIndex }, clock),
+        ),
+      );
+      await writeLibrarySort(store, "MANUAL");
+    },
+    onSettled: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["copies"] }),
+        queryClient.invalidateQueries({ queryKey: ["librarySort"] }),
+      ]);
+      setDropped(null);
+    },
+  });
+
+  const chooseSort = useMutation({
+    mutationFn: (next: LibrarySort) => writeLibrarySort(store, next),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["librarySort"] }),
+  });
+
+  const rows =
+    showingArrived && outcome !== null ? shelf.filter((row) => arrived.has(row.copy.id)) : shelf;
+
   return {
-    rows: showingArrived && outcome !== null ? all.filter((row) => arrived.has(row.copy.id)) : all,
+    rows,
+    sort,
+    setSort: useCallback(
+      (next: LibrarySort) => {
+        chooseSort.mutate(next);
+      },
+      [chooseSort],
+    ),
+    /** Whether "Your order" is a thing a menu can offer yet. */
+    arranged: useMemo(() => hasArrangedOrder(all.map((row) => row.copy)), [all]),
+    arrange: useCallback(
+      (from: number, to: number) => {
+        arrange.mutate({ from, to });
+      },
+      [arrange],
+    ),
+    /**
+     * Whether a record may be picked up at all -- the whole shelf, or none of it. The
+     * sync strip's narrowing counts too: its list is the arrivals, not the shelf.
+     */
+    arrangeable: !filtered && !(showingArrived && outcome !== null),
     outcome,
     showingArrived,
     showArrived: () => setShowingArrived(true),
@@ -95,7 +198,7 @@ export function useLibraryLogic() {
     setMinRating,
     /** What "Show" would show — the filters alone, not the sync strip's narrowing. */
     matching: all.length,
-    filtered: format !== "ALL" || minRating !== null,
+    filtered,
     clearFilters: useCallback(() => {
       setFormat("ALL");
       setMinRating(null);

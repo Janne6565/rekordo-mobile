@@ -201,6 +201,10 @@ export class SqliteLocalStore implements LocalStore {
         -- Kept off every shelf but the owner's, whatever the sharing settings say. 0/1
         -- rather than a boolean, which SQLite does not have.
         hidden          INTEGER NOT NULL DEFAULT 0,
+        -- Where this copy sits on a shelf somebody has arranged by hand. Nullable, and
+        -- null is not position 0: it means never placed, which sorts after every copy
+        -- that has been. No index -- the one query that reads it reads the whole shelf.
+        sortIndex       INTEGER,
         createdAt       INTEGER NOT NULL,
         deletedAt       INTEGER,
         fieldClocks     TEXT NOT NULL
@@ -294,6 +298,12 @@ export class SqliteLocalStore implements LocalStore {
     // nobody has hidden is shown, and "never asked" is not a third state worth having.
     if (!columns.some((column) => column.name === "hidden")) {
       await db.execAsync("ALTER TABLE copies ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0");
+    }
+    // Where a copy sits on a hand-arranged shelf. Nullable, and every row already here
+    // gets null -- nobody had arranged anything before the column existed, and null is
+    // exactly what "never placed" means.
+    if (!columns.some((column) => column.name === "sortIndex")) {
+      await db.execAsync("ALTER TABLE copies ADD COLUMN sortIndex INTEGER");
     }
     // A scan kept before it could be identified (2e). Nullable, and every row already here
     // gets null: they were all identified at the moment they were made.
@@ -534,7 +544,15 @@ export class SqliteLocalStore implements LocalStore {
         ? `${artist} COLLATE NOCASE ASC`
         : filter.sort === "YEAR_DESC"
           ? "COALESCE(r.year, c.manualYear) DESC"
-          : "c.createdAt DESC";
+          : // The shelf as somebody arranged it. `sortIndex IS NULL` sorts 0 before 1, so
+            // the placed copies come first and everything filed since the last arranging
+            // follows, newest first among themselves -- which is `compareManualOrder` in
+            // the shared package, said in SQL. Kept in step by hand: this store needs a
+            // device to run at all, so there is no test here that could hold the two
+            // together. Change one, change the other.
+            filter.sort === "MANUAL"
+            ? "c.sortIndex IS NULL, c.sortIndex ASC, c.createdAt DESC"
+            : "c.createdAt DESC";
 
     const rows = await this.handle().getAllAsync<CopyRow>(
       `SELECT c.* FROM copies c LEFT JOIN releases r ON r.id = c.releaseId
@@ -581,6 +599,25 @@ export class SqliteLocalStore implements LocalStore {
   async putCopy(copy: Copy): Promise<void> {
     await this.write(copy);
     await this.markPending(copy.id);
+  }
+
+  /**
+   * A whole arranged shelf, in one transaction and one pass over the pending list.
+   *
+   * `putCopy` in a loop would re-read and re-write the pending ids once per record, which
+   * is quadratic -- and the first drag on a shelf that has never been arranged writes to
+   * every record on it.
+   */
+  async putCopies(copies: readonly Copy[]): Promise<void> {
+    if (copies.length === 0) return;
+    await this.handle().withTransactionAsync(async () => {
+      for (const copy of copies) {
+        await this.write(copy);
+      }
+    });
+    const pending = new Set(await this.readPendingIds());
+    for (const copy of copies) pending.add(copy.id);
+    await this.writePendingIds([...pending]);
   }
 
   async adoptCopy(copy: Copy): Promise<void> {
@@ -630,8 +667,8 @@ export class SqliteLocalStore implements LocalStore {
         (id, releaseId, albumId, pendingBarcode, manualTitle, manualArtist, manualYear,
          manualLabel, manualCatalogNumber, manualFormat, condition, sleeveCondition,
          pricePaidCents, currency, purchasedOn, purchasedAt, notes, notesConflict, rating,
-         catalogArt, hidden, createdAt, deletedAt, fieldClocks)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         catalogArt, hidden, sortIndex, createdAt, deletedAt, fieldClocks)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         copy.id,
         copy.releaseId,
@@ -654,6 +691,7 @@ export class SqliteLocalStore implements LocalStore {
         copy.rating,
         copy.catalogArt,
         copy.hidden ? 1 : 0,
+        copy.sortIndex,
         copy.createdAt,
         copy.deletedAt,
         JSON.stringify(copy.fieldClocks),
@@ -1063,7 +1101,10 @@ export class SqliteLocalStore implements LocalStore {
 }
 
 interface CopyRow
-  extends Omit<Copy, "fieldClocks" | "hidden" | "pendingBarcode" | "albumId" | "catalogArt"> {
+  extends Omit<
+    Copy,
+    "fieldClocks" | "hidden" | "pendingBarcode" | "albumId" | "catalogArt" | "sortIndex"
+  > {
   fieldClocks: string;
   /** SQLite has no boolean; 0 or 1. */
   hidden: number;
@@ -1073,6 +1114,8 @@ interface CopyRow
   albumId: string | null | undefined;
   /** Undefined on a row written before this store had the column at all -- see the migration. */
   catalogArt: Copy["catalogArt"] | undefined;
+  /** Undefined on a row older than the column, which reads the same as never placed. */
+  sortIndex: number | null | undefined;
 }
 
 interface ReleaseRow extends Omit<Release, "coverTheme"> {
@@ -1103,6 +1146,8 @@ function toCopy(row: CopyRow): Copy {
     albumId: row.albumId ?? null,
     // A row from before this store held the column at all. AUTO is what it behaved as.
     catalogArt: row.catalogArt ?? "AUTO",
+    // Undefined on a row older than the column; never placed, which is what null means.
+    sortIndex: row.sortIndex ?? null,
     fieldClocks: JSON.parse(row.fieldClocks) as Copy["fieldClocks"],
   };
 }

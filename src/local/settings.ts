@@ -1,7 +1,7 @@
 import { type CurrencyCode, DEFAULT_CURRENCY, isCurrencyCode } from "@/domain/currency";
 import type { LocalStore } from "@/local/LocalStore";
-import type { LegalLanguage, WishSort } from "@janne6565/rekordo-shared";
-import { parseWishSort } from "@janne6565/rekordo-shared";
+import type { LegalLanguage, LibrarySort, WishSort } from "@janne6565/rekordo-shared";
+import { parseLibrarySort, parseWishSort } from "@janne6565/rekordo-shared";
 
 /**
  * The handful of device-local preferences the account screen exposes.
@@ -24,6 +24,16 @@ const RECENT_SEARCH_LIMIT = 6;
  * about the screen in front of you; where you dragged a row to is a fact about the list.
  */
 const WISHLIST_SORT = "wishlistSort";
+
+/**
+ * Which order the shelf is in, this device's own choice.
+ *
+ * The *order* a hand-arranged shelf is in syncs -- that is `Copy.sortIndex` -- but which
+ * of the four orders you are currently looking at does not. Sorting by artist on the phone
+ * to find something is not a statement about the collection, and a laptop that rearranged
+ * itself because of it would be a laptop doing something nobody asked for.
+ */
+const LIBRARY_SORT = "librarySort";
 
 /**
  * Which language the legal documents are read in.
@@ -257,6 +267,14 @@ export async function writeWishlistSort(store: LocalStore, sort: WishSort): Prom
  * German rather than English as the fallback: it is the binding original, so a reader who
  * has expressed no preference is better served by the text that actually applies to them.
  */
+export async function readLibrarySort(store: LocalStore): Promise<LibrarySort> {
+  return parseLibrarySort(await store.readSetting(LIBRARY_SORT));
+}
+
+export async function writeLibrarySort(store: LocalStore, sort: LibrarySort): Promise<void> {
+  await store.writeSetting(LIBRARY_SORT, sort);
+}
+
 export async function readDocumentLanguage(
   store: LocalStore,
   uiLanguage: string,

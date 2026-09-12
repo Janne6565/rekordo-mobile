@@ -69,12 +69,22 @@ export function CopyTile({
  */
 function TileRating({ rating }: { readonly rating: number | null }) {
   const stars = starGlyphs(rating);
-  if (stars === null) return null;
-
+  // Drawn only when there is a rating -- a grid where every third tile carries five hollow
+  // stars reads as a list of things you have not got round to -- but the *line* is always
+  // there. Reserving it makes every tile the same height, which is what lets the shelf be
+  // arranged: a virtualised grid cannot measure rows it has never laid out, so one
+  // measured tile has to answer for all of them. It also stops a row of three from
+  // standing taller than its neighbours because one record happens to be rated.
   return (
     <Text style={styles.rating} numberOfLines={1}>
-      <Text style={styles.ratingOn}>{stars.on}</Text>
-      <Text style={styles.ratingOff}>{stars.off}</Text>
+      {stars === null ? (
+        " "
+      ) : (
+        <>
+          <Text style={styles.ratingOn}>{stars.on}</Text>
+          <Text style={styles.ratingOff}>{stars.off}</Text>
+        </>
+      )}
     </Text>
   );
 }

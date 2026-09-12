@@ -51,7 +51,28 @@ export function useWishlistLogic() {
    * worse than results that churn.
    */
   const [search, setSearch] = useState("");
-  const shown = useMemo(() => filterWishlist(ordered, search), [ordered, search]);
+
+  /**
+   * The order a drop just built, held until the store has caught up.
+   *
+   * Writing a row per entry and re-reading the list is tens of milliseconds the row would
+   * otherwise spend back where it started — the one frame that makes a gesture feel like
+   * it was not taken. The shelf holds its drop the same way.
+   */
+  const [dropped, setDropped] = useState<readonly string[] | null>(null);
+  const held = useMemo(() => {
+    if (dropped === null) return ordered;
+    const byId = new Map(ordered.map((item) => [item.id, item]));
+    const seen = new Set(dropped);
+    return [
+      ...dropped
+        .map((id) => byId.get(id))
+        .filter((item): item is WishlistItem => item !== undefined),
+      ...ordered.filter((item) => !seen.has(item.id)),
+    ];
+  }, [ordered, dropped]);
+
+  const shown = useMemo(() => filterWishlist(held, search), [held, search]);
 
   /**
    * The albums on the list, sorted and de-duplicated so the query key is the *set* rather
@@ -181,15 +202,19 @@ export function useWishlistLogic() {
    */
   const reorder = useMutation({
     mutationFn: async ({ from, to }: { readonly from: number; readonly to: number }) => {
-      const next = moveWish(ordered, from, to);
+      const next = moveWish(held, from, to);
+      setDropped(next.map((item) => item.id));
       for (const { item, sortIndex } of manualOrderWrites(next)) {
         await store.putWishlistItem(applyWishPatch(item, { sortIndex }, clock));
       }
       await writeWishlistSort(store, "MANUAL");
     },
-    onSuccess: async () => {
+    // `onSettled` rather than `onSuccess`: a write that failed still has to let the held
+    // order go, or the list would show a move that never happened until the app restarts.
+    onSettled: async () => {
       await invalidate();
       await queryClient.invalidateQueries({ queryKey: ["wishlistSort"] });
+      setDropped(null);
     },
   });
 

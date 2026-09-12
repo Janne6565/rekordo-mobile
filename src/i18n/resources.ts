@@ -21,9 +21,16 @@ const enCommon = {
     itemCount: "{{count}} items",
     addItem: "Add item",
     noMatches: "No items match this filter.",
-    /* What the shelf is when nothing has been asked of it. Replaced by the filter itself
-       once there is one -- see LibraryScreen's shelfLine. */
-    sortedByAdded: "Sorted by date added",
+    /* What order the shelf is in. Joined with the filter, when there is one — see
+       LibraryScreen's shelfLine. */
+    sort: {
+      open: "Change the order",
+      ADDED_DESC: "Newest first",
+      ARTIST_ASC: "By artist",
+      YEAR_DESC: "By year",
+      /* Only offered once a record has been dragged: it is the order you built. */
+      MANUAL: "Your order",
+    },
     filters: {
       open: "Filters",
       openLabel: "Filter the shelf",
@@ -1208,7 +1215,13 @@ const deCommon: CommonSchema = {
     itemCount: "{{count}} Exemplare",
     addItem: "Hinzufügen",
     noMatches: "Keine Einträge passen zu diesem Filter.",
-    sortedByAdded: "Nach Aufnahmedatum sortiert",
+    sort: {
+      open: "Reihenfolge ändern",
+      ADDED_DESC: "Neueste zuerst",
+      ARTIST_ASC: "Nach Künstler",
+      YEAR_DESC: "Nach Jahr",
+      MANUAL: "Deine Reihenfolge",
+    },
     filters: {
       open: "Filter",
       openLabel: "Das Regal filtern",

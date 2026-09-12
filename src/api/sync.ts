@@ -50,6 +50,8 @@ function toCopy(raw: unknown): Copy | null {
     rating: dto.rating ?? null,
     // Absent means a server older than the field, which reads as not hidden.
     hidden: dto.hidden ?? false,
+    // Absent means a server older than the field, which reads as never placed by hand.
+    sortIndex: dto.sortIndex ?? null,
     createdAt: dto.createdAt,
     deletedAt: dto.deletedAt ?? null,
     fieldClocks: dto.fieldClocks,

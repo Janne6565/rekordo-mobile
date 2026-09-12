@@ -42,6 +42,7 @@ const copy: Copy = {
   notesConflict: null,
   rating: 4,
   hidden: false,
+  sortIndex: null,
   createdAt: 1,
   deletedAt: null,
   fieldClocks: {} as Copy["fieldClocks"],
