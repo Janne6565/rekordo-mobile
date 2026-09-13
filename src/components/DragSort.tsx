@@ -5,6 +5,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -272,6 +273,18 @@ export function useDragSort({
 
   const runFrames = useCallback((on: boolean) => frame.setActive(on), [frame]);
 
+  /**
+   * Putting the record down, in one React commit.
+   *
+   * `setCarrying(null)` and whatever `onDrop` writes are batched together, so the frame
+   * that stops drawing the carried tile is the same frame the list comes back reordered.
+   * The two must not be allowed to land separately: the reordered list and the displaced
+   * tiles are the same picture, and either one alone is the wrong one.
+   *
+   * This is why `onDrop` has to apply its new order *synchronously*. A caller that only
+   * starts an async write here — and reorders when it resolves — puts the old order back
+   * on screen in between.
+   */
   const finish = useCallback(
     (from: number, to: number) => {
       setCarrying(null);
@@ -279,6 +292,22 @@ export function useDragSort({
     },
     [onDrop],
   );
+
+  /**
+   * The carry's own state is cleared only after that commit has happened.
+   *
+   * An effect rather than the spring's callback, because this is the half that must come
+   * second: while these still hold their values the items keep their displacement, which
+   * is exactly what makes the swap invisible.
+   */
+  useEffect(() => {
+    if (carrying !== null) return;
+    active.value = -1;
+    projected.value = -1;
+    carriedX.value = 0;
+    carriedY.value = 0;
+    scrolled.value = 0;
+  }, [carrying, active, projected, carriedX, carriedY, scrolled]);
 
   const gesture = useMemo(
     () =>
@@ -364,13 +393,17 @@ export function useDragSort({
           carriedX.value = withSpring(restX, CARRY.drop);
           carriedY.value = withSpring(restY, CARRY.drop, (settled) => {
             if (settled !== true) return;
-            // Only now is the list told, so the reordered data arrives on the frame the
-            // carried item is already sitting in its new slot. Clearing `active` any
-            // earlier puts the tile back in its old place for as long as the write takes.
-            active.value = -1;
-            projected.value = -1;
-            carriedX.value = 0;
-            carriedY.value = 0;
+            /*
+             * Hands over to React and writes nothing else.
+             *
+             * Clearing `active` and the offsets here — which the first version did — is
+             * the bug somebody sees as the record blinking back to where it came from.
+             * These are UI-thread writes, so every tile snapped to an identity transform
+             * on the very next frame, while React still held the *old* order: one or two
+             * frames of the old arrangement, dropped record back in its old place, and
+             * then the new order arriving as a flash. The reset now happens after the
+             * commit that reorders the list — see `useDragSort`'s effect.
+             */
             runOnJS(finish)(from, to);
           });
         }),
@@ -438,9 +471,12 @@ export function DragSortArea({
         <GestureDetector gesture={drag.gesture}>
           <View style={styles.area}>{children}</View>
         </GestureDetector>
-        <CarriedItem drag={drag}>
-          {drag.carrying === null ? null : overlay(drag.carrying)}
-        </CarriedItem>
+        {/* Gone outright between carries: the shared values behind it are cleared a beat
+            later (see `useDragSort`), so a `CarriedItem` left mounted would spend that
+            beat drawing an empty box with the lift's shadow under it. */}
+        {drag.carrying === null ? null : (
+          <CarriedItem drag={drag}>{overlay(drag.carrying)}</CarriedItem>
+        )}
       </View>
     </DragSortContext.Provider>
   );
@@ -503,6 +539,7 @@ export function DragSortItem({
   readonly style?: object;
 }) {
   const drag = useContext(DragSortContext);
+  const carrying = drag !== null && drag.carrying !== null;
   // The shared values, never the controller: see `CarriedItem`.
   const active = drag?.active;
   const projected = drag?.projected;
@@ -552,8 +589,18 @@ export function DragSortItem({
           drag.slots.value = [...drag.measured.current];
         };
 
+  /*
+   * The animated style is worn only while something is in the air.
+   *
+   * It is a React value that switches it off, deliberately, and that is the other half of
+   * the atomic drop: the commit that reorders the list is the same commit that stops these
+   * items reading the carry. Left on, they would spend the frame after the drop applying a
+   * displacement meant for the *old* order to the new one — the same flash from the other
+   * side. Off, the drop is invisible, because a list of displaced tiles and the reordered
+   * list are the same picture.
+   */
   return (
-    <Animated.View style={[style, animated]} onLayout={onLayout}>
+    <Animated.View style={carrying ? [style, animated] : style} onLayout={onLayout}>
       {children}
     </Animated.View>
   );

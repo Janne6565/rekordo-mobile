@@ -129,9 +129,7 @@ export function useLibraryLogic() {
    * record.
    */
   const arrange = useMutation({
-    mutationFn: async ({ from, to }: { readonly from: number; readonly to: number }) => {
-      const next = moveCopy(shelf, from, to);
-      setDropped(next.map((row) => row.copy.id));
+    mutationFn: async ({ next }: { readonly next: readonly LibraryRow[] }) => {
       // One batch: the first drag on a shelf that has never been arranged renumbers every
       // record on it, and `putCopy` in a loop is quadratic in the pending list.
       await store.putCopies(
@@ -169,11 +167,22 @@ export function useLibraryLogic() {
     ),
     /** Whether "Your order" is a thing a menu can offer yet. */
     arranged: useMemo(() => hasArrangedOrder(all.map((row) => row.copy)), [all]),
+    /**
+     * The held order is applied *here*, synchronously, and not inside the mutation.
+     *
+     * This is called while the record is being put down, and the drag clears itself in
+     * the same breath — so both land in one React commit and the swap is invisible.
+     * Setting it inside `mutationFn` instead makes it a later commit, and the shelf shows
+     * the old order in between: the record blinks back to where it came from and the row
+     * flashes. The write itself is still asynchronous; only the order is not.
+     */
     arrange: useCallback(
       (from: number, to: number) => {
-        arrange.mutate({ from, to });
+        const next = moveCopy(shelf, from, to);
+        setDropped(next.map((row) => row.copy.id));
+        arrange.mutate({ next });
       },
-      [arrange],
+      [arrange, shelf],
     ),
     /**
      * Whether a record may be picked up at all -- the whole shelf, or none of it. The

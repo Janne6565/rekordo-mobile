@@ -112,7 +112,23 @@ export function ReleaseArt({
     [previewUri, cover].find((candidate) => candidate != null && !failed.has(candidate)) ?? null;
 
   const gone = url === null;
-  const shown = !gone && loadedUrl === url;
+  /**
+   * Shown outright when this picture has been on screen before, even in another instance.
+   *
+   * A grid tile does not survive the shelf being reordered. `FlatList` with `numColumns`
+   * builds each row's key by joining the keys of the items in it, so moving one record
+   * changes which records share a row, every row key changes, and React tears the rows
+   * down and builds new ones — brand-new `ReleaseArt`s with no memory of what they had
+   * loaded. Every cover then introduced itself again, which is the flicker somebody sees
+   * after dropping a record. Scrolling a long shelf does the same thing for the same
+   * reason, and always did.
+   *
+   * So "have I loaded this?" cannot live in component state alone. `SEEN` is the session's
+   * answer: a url in it is a picture React Native already holds, and one that is already
+   * held has not arrived and must not be animated as though it had. It only ever grows by
+   * one entry per distinct picture actually displayed, which is bounded by the collection.
+   */
+  const shown = !gone && (loadedUrl === url || SEEN.has(url));
   /**
    * Whether the subject itself has not been read yet.
    *
@@ -173,7 +189,18 @@ export function ReleaseArt({
   // The body does not read `url` because its whole job is to run again when `url` changes.
   // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the url, see above.
   useEffect(() => {
-    reveal.setValue(0);
+    /*
+     * A picture this component has already loaded is shown the instant it is asked for
+     * again — no reset to zero, and so no second fade.
+     *
+     * Resetting unconditionally meant that any churn in the props replayed the arrival
+     * animation on an image that had never left: a query whose key changed handed the
+     * tile `null` and then the same uri back, and the cover visibly reloaded. That was a
+     * real bug in the cover-photo query and is fixed there, but the rule belongs here
+     * too — the reveal exists to introduce a picture, and one already on screen is not
+     * being introduced.
+     */
+    reveal.setValue(url !== null && (url === loadedUrl || SEEN.has(url)) ? 1 : 0);
   }, [url, reveal]);
 
   useEffect(() => {
@@ -185,7 +212,10 @@ export function ReleaseArt({
     <Animated.Image
       source={{ uri: url }}
       style={[StyleSheet.absoluteFill, { opacity: reveal }]}
-      onLoad={() => setLoadedUrl(url)}
+      onLoad={() => {
+        SEEN.add(url);
+        setLoadedUrl(url);
+      }}
       onError={() => setFailed((seen) => new Set(seen).add(url))}
     />
   );
@@ -240,6 +270,15 @@ export function ReleaseArt({
 /** See `waitedOut`. Long enough to cover a store read and a sync round, short enough that
  *  a tile which is never getting a cover stops promising one. */
 const UNRESOLVED_GRACE_MS = 4000;
+
+/**
+ * Every picture this session has drawn at least once — see `shown`.
+ *
+ * Module scope on purpose: the whole point is to outlive the components, which a grid
+ * unmounts and remounts freely. Not cleared, and not a cache of anything — it holds urls,
+ * never bytes, and answers one question: has this been on screen before?
+ */
+const SEEN = new Set<string>();
 
 const styles = StyleSheet.create({
   /*

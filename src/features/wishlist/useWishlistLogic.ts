@@ -201,9 +201,7 @@ export function useWishlistLogic() {
    * would otherwise produce a move the next render undoes.
    */
   const reorder = useMutation({
-    mutationFn: async ({ from, to }: { readonly from: number; readonly to: number }) => {
-      const next = moveWish(held, from, to);
-      setDropped(next.map((item) => item.id));
+    mutationFn: async ({ next }: { readonly next: readonly WishlistItem[] }) => {
       for (const { item, sortIndex } of manualOrderWrites(next)) {
         await store.putWishlistItem(applyWishPatch(item, { sortIndex }, clock));
       }
@@ -280,7 +278,17 @@ export function useWishlistLogic() {
      */
     pictureOf: (item: WishlistItem): string | null => ownPhotos.get(item.id) ?? null,
     setSort: (next: WishSort) => chooseSort.mutate(next),
-    reorder: (from: number, to: number) => reorder.mutate({ from, to }),
+    /**
+     * The held order is applied here, synchronously, and not inside the mutation — the
+     * drag clears itself in the same breath, so both land in one React commit and the
+     * swap is invisible. A later commit shows the old order in between, which reads as
+     * the row blinking back to where it came from. The shelf does the same.
+     */
+    reorder: (from: number, to: number) => {
+      const next = moveWish(held, from, to);
+      setDropped(next.map((item) => item.id));
+      reorder.mutate({ next });
+    },
     edit: (item: WishlistItem, patch: WishPatch) => edit.mutate({ item, patch }),
     remove: (item: WishlistItem) => remove.mutate(item),
     removing: remove.isPending ? remove.variables?.id : undefined,

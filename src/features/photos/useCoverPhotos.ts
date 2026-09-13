@@ -1,5 +1,6 @@
 import { useStore } from "@/local/StoreProvider";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 
 /**
  * Each copy's own photo, as a file URI an Image can render.
@@ -18,12 +19,21 @@ import { useQuery } from "@tanstack/react-query";
 export function useCoverPhotos(copyIds: readonly string[]): ReadonlyMap<string, string> {
   const { store } = useStore();
 
+  /**
+   * The copies on screen as a *set*: sorted and de-duplicated, then joined for the key.
+   *
+   * Sorting is the whole point, and the joining alone used to be it. The key was the ids
+   * in the order the shelf happened to be in, so arranging the shelf by hand made it a
+   * different query — one with nothing cached — and every preview went null for as long
+   * as the read took. A drag changes the order and never the set, so with the set as the
+   * key it does not refetch at all.
+   */
+  const ids = useMemo(() => [...new Set(copyIds)].sort(), [copyIds]);
+
   const photos = useQuery({
-    // Joined, so the key changes only when the set of copies on screen does — a new array
-    // of the same ids on every render would otherwise refetch forever.
-    queryKey: ["cover-photos", copyIds.join(",")],
+    queryKey: ["cover-photos", ids.join(",")],
     queryFn: async () => {
-      const covers = await store.listCoverPhotos(copyIds);
+      const covers = await store.listCoverPhotos(ids);
       return new Map([...covers].map(([copyId, photo]) => [copyId, store.photoUri(photo.id)]));
     },
   });
