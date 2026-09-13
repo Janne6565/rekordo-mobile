@@ -349,10 +349,18 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 12,
   },
-  dragHint: { flex: 1, flexDirection: "row", alignItems: "center", gap: 5, minWidth: 0 },
+  /** Pushed to the far edge: the two things you *do* lead the row, and this trails it. */
+  dragHint: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 5,
+    minWidth: 0,
+  },
   metaText: {
     flexShrink: 1,
-    textAlign: "left",
+    textAlign: "right",
     fontSize: 11.5,
     fontWeight: "500",
     color: colors.inkMuted,
