@@ -342,6 +342,9 @@ export function useDragSort({
 
   const finish = useCallback(
     (from: number, to: number) => {
+      // The other half of the same guard, on this thread: `runOnJS` is a message, and two
+      // of them can be in flight before either arrives.
+      if (!lifted.current) return;
       lifted.current = false;
       endedAt.current = Date.now();
       // One commit, guaranteed: `runOnJS` hands control back outside anything React is
@@ -447,7 +450,13 @@ export function useDragSort({
          */
         .onFinalize(() => {
           const from = active.value;
-          if (from === -1) return;
+          // `settling` doubles as "this carry has already been handed over". The drop used
+          // to be idempotent by accident: it went out from the landing spring's callback,
+          // and a second one found `active` already cleared and returned. Handing over
+          // directly took that away, and a gesture that finalises twice then arranged the
+          // list twice — two renumberings of two different snapshots, interleaved, which
+          // lands as duplicate positions and an order nobody asked for.
+          if (from === -1 || settling.value) return;
           const to = projected.value === -1 ? from : projected.value;
 
           // Before anything else, and on this thread: the frame callback must stop adding

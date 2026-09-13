@@ -275,10 +275,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginTop: 12,
-    // The list starts straight under this row, and without it the first entry crowded the
-    // pill. On the controls rather than the header, so an empty wishlist -- which has no
-    // controls at all -- does not gain a gap it has nothing to separate.
-    marginBottom: 12,
+    // No gap of its own any more. It carried one so the first entry would not crowd the
+    // sort pill that used to stand here; with the pill gone this row is a single line of
+    // small text, and 12 on top of the list's own 18 read as the list starting late.
   },
   dragHint: { flexDirection: "row", alignItems: "center", gap: 5 },
   dragHintText: { fontSize: 11.5, color: colors.inkMuted },
