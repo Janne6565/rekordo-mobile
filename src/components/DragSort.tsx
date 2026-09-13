@@ -600,7 +600,7 @@ export function DragSortItem({
    * list are the same picture.
    */
   return (
-    <Animated.View style={carrying ? [style, animated] : style} onLayout={onLayout}>
+    <Animated.View style={carrying ? [style, animated] : [style, RESTING]} onLayout={onLayout}>
       {children}
     </Animated.View>
   );
@@ -641,6 +641,18 @@ export function uniformSlots({
   }
   return slots;
 }
+
+/**
+ * What an item wears when nothing is being carried — and it has to say so out loud.
+ *
+ * Reanimated writes opacity and transform straight onto the native view from the UI
+ * thread. React knows nothing about that, so when the animated style stops being applied
+ * it diffs its *own* previous style against the next one, finds neither mentions opacity,
+ * emits no change — and the view keeps whatever was last written to it. For the record
+ * that was just being carried, that is `opacity: 0`: it is dropped, and then it is simply
+ * not there. Naming the resting values makes the diff non-empty and puts them back.
+ */
+const RESTING = { opacity: 1, transform: [{ translateX: 0 }, { translateY: 0 }] } as const;
 
 const styles = StyleSheet.create({
   area: { flex: 1 },

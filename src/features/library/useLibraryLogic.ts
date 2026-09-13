@@ -1,4 +1,5 @@
 import { useStore } from "@/local/StoreProvider";
+import { arrangedAt } from "@/local/arrangedAt";
 import { readCatalogueGap, readLibrarySort, writeLibrarySort } from "@/local/settings";
 import { syncOutcomeCleared } from "@/store/authSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -13,7 +14,7 @@ import {
   moveCopy,
 } from "@janne6565/rekordo-shared";
 import type { Copy, Format, LibrarySort, Release } from "@janne6565/rekordo-shared";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 
 export type FormatFilter = Format | "ALL";
@@ -76,6 +77,16 @@ export function useLibraryLogic() {
 
   const copiesQuery = useQuery({
     queryKey: ["copies", format, sort],
+    /**
+     * A shelf already on screen stays there while the next one is read.
+     *
+     * The order is part of the key, and the first drag switches it — so arranging turned
+     * the shelf into a query with nothing cached and every record disappeared until the
+     * read came back. Keeping the previous rows means the drop's held order stays visible
+     * across that swap, which is the whole point of holding it. The same applies to
+     * changing the sort from the menu, which used to blank the grid for a beat.
+     */
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const copies = await store.listCopies({ format, sort });
       const releases = await store.getReleases(catalogueKeysOf(copies));
@@ -134,7 +145,7 @@ export function useLibraryLogic() {
       // record on it, and `putCopy` in a loop is quadratic in the pending list.
       await store.putCopies(
         libraryOrderWrites(next.map((row) => row.copy)).map(({ copy, sortIndex }) =>
-          applyCopyPatch(copy, { sortIndex }, clock),
+          applyCopyPatch(copy, { sortIndex }, arrangedAt(clock)),
         ),
       );
       await writeLibrarySort(store, "MANUAL");
