@@ -667,7 +667,7 @@ export function DragSortItem({
     if (active === undefined || projected === undefined || slots === undefined) return {};
     const from = active.value;
     const to = projected.value;
-    if (from === -1 || to === -1 || index === from) return RESTING;
+    if (from === -1 || to === -1 || index === from) return STILL;
 
     // Where this item goes if the record is set down now: one step along, into the hole it
     // left behind.
@@ -677,7 +677,7 @@ export function DragSortItem({
 
     const here = slots.value[index];
     const there = slots.value[moved];
-    if (here === undefined || there === undefined) return RESTING;
+    if (here === undefined || there === undefined) return STILL;
     return {
       transform: [
         { translateX: withSpring(there.x - here.x, CARRY.shift) },
@@ -784,6 +784,16 @@ const RESTING = {
   opacity: 1,
   transform: [{ translateX: 0 }, { translateY: 0 }],
 } as const;
+
+/**
+ * The same stillness, said by the worklet — and deliberately silent about opacity.
+ *
+ * Reanimated's word is the last one on any property it mentions, so a worklet that says
+ * `opacity: 1` writes straight over React's "this record is in the air, do not draw it":
+ * the row stayed visible in its old place for the whole carry, with the overlay following
+ * the finger. Opacity is React's alone (see `carriedHere`); the worklet moves things.
+ */
+const STILL = { transform: [{ translateX: 0 }, { translateY: 0 }] } as const;
 
 /** The record in the air. Its place is kept open; the overlay draws the tile itself. */
 const HIDDEN = { opacity: 0 } as const;
