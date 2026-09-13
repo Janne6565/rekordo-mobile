@@ -14,7 +14,7 @@ import type { Format } from "@janne6565/rekordo-shared";
 import { catalogArtShown, copyFormat, copyPreviewSrc } from "@janne6565/rekordo-shared";
 import { FORMAT_LABELS } from "@janne6565/rekordo-shared";
 import { useRouter } from "expo-router";
-import { Dices, Plus, SlidersHorizontal } from "lucide-react-native";
+import { ArrowUpDown, Dices, Plus, SlidersHorizontal } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from "react-native";
@@ -196,9 +196,26 @@ export function LibraryScreen() {
             </Text>
           </Pressable>
         </View>
-        <Text style={styles.metaText} numberOfLines={1}>
-          {shelfLine}
-        </Text>
+        {/*
+         * The wishlist's note, word for word — the two lists are arranged with the same
+         * gesture, and saying it two ways would read as two gestures.
+         *
+         * A narrowed shelf says what it is narrowed *by* instead. That line has to keep
+         * its place: a shelf that admits to being filtered without naming the filter sends
+         * you back into the sheet to find out what you did. It also answers the question
+         * the note would raise, since a position in a narrowed shelf means nothing in the
+         * whole one and the drag is refused there.
+         */}
+        {logic.collectionEmpty ? null : (
+          <View style={styles.dragHint}>
+            {shelfLine === null ? (
+              <ArrowUpDown size={13} color={colors.inkMuted} strokeWidth={1.75} />
+            ) : null}
+            <Text style={styles.metaText} numberOfLines={1}>
+              {shelfLine ?? t("library.longPressHint")}
+            </Text>
+          </View>
+        )}
       </View>
 
       <CatalogueNotice gap={logic.catalogueGap} />
@@ -332,9 +349,10 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 12,
   },
+  dragHint: { flex: 1, flexDirection: "row", alignItems: "center", gap: 5, minWidth: 0 },
   metaText: {
-    flex: 1,
-    textAlign: "right",
+    flexShrink: 1,
+    textAlign: "left",
     fontSize: 11.5,
     fontWeight: "500",
     color: colors.inkMuted,

@@ -5,12 +5,11 @@ import { formatRelativeTime } from "@/domain/relativeTime";
 import { WishSheet } from "@/features/wishlist/WishSheet";
 import { useWishlistLogic } from "@/features/wishlist/useWishlistLogic";
 import { colors, fonts } from "@/theme/colors";
-import type { WishSort, WishlistItem } from "@janne6565/rekordo-shared";
-import { CHOOSABLE_WISH_SORTS, FORMAT_LABELS } from "@janne6565/rekordo-shared";
+import type { WishlistItem } from "@janne6565/rekordo-shared";
+import { FORMAT_LABELS } from "@janne6565/rekordo-shared";
 import { useRouter } from "expo-router";
 import {
   ArrowUpDown,
-  ChevronDown,
   ChevronRight,
   Disc3,
   Heart,
@@ -44,7 +43,6 @@ export function WishlistScreen() {
 
   /** "MANUAL" opens the sheet with empty fields; an item reopens it on that entry. */
   const [sheet, setSheet] = useState<"MANUAL" | WishlistItem | null>(null);
-  const [sortOpen, setSortOpen] = useState(false);
 
   const listRef = useAnimatedRef<Animated.ScrollView>();
   const drag = useDragSort({
@@ -142,44 +140,12 @@ export function WishlistScreen() {
 
         {logic.count > 0 && (
           <View style={styles.controls}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setSortOpen((was) => !was)}
-              style={styles.sortChip}
-            >
-              <Text style={styles.sortChipText}>{t(`wishlist.sort.${logic.sort}`)}</Text>
-              <ChevronDown size={13} color={colors.inkSubtle} strokeWidth={2} />
-            </Pressable>
             <View style={styles.dragHint}>
               <ArrowUpDown size={13} color={colors.inkMuted} strokeWidth={1.75} />
               <Text style={styles.dragHintText}>
                 {logic.filtering ? t("wishlist.dragWhileFiltered") : t("wishlist.longPressHint")}
               </Text>
             </View>
-          </View>
-        )}
-
-        {sortOpen && (
-          <View style={styles.sortMenu}>
-            {[...CHOOSABLE_WISH_SORTS, ...(logic.manual ? (["MANUAL"] as const) : [])].map(
-              (option: WishSort) => (
-                <Pressable
-                  key={option}
-                  accessibilityRole="button"
-                  onPress={() => {
-                    logic.setSort(option);
-                    setSortOpen(false);
-                  }}
-                  style={styles.sortOption}
-                >
-                  <Text
-                    style={[styles.sortOptionText, logic.sort === option && styles.sortOptionOn]}
-                  >
-                    {t(`wishlist.sort.${option}`)}
-                  </Text>
-                </Pressable>
-              ),
-            )}
           </View>
         )}
       </View>
@@ -314,31 +280,8 @@ const styles = StyleSheet.create({
     // controls at all -- does not gain a gap it has nothing to separate.
     marginBottom: 12,
   },
-  sortChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 999,
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.line,
-  },
-  sortChipText: { fontSize: 12, fontWeight: "600", color: colors.ink },
   dragHint: { flexDirection: "row", alignItems: "center", gap: 5 },
   dragHintText: { fontSize: 11.5, color: colors.inkMuted },
-  sortMenu: {
-    marginTop: 8,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.line,
-    overflow: "hidden",
-  },
-  sortOption: { paddingHorizontal: 14, paddingVertical: 11 },
-  sortOptionText: { fontSize: 13, color: colors.ink },
-  sortOptionOn: { fontWeight: "700" },
   list: { padding: LIST.padding, paddingBottom: 120, gap: LIST.gap },
   row: wishCardStyle,
   empty: { flex: 1, alignItems: "center", paddingHorizontal: 30, paddingTop: 70 },

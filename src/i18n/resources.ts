@@ -21,6 +21,10 @@ const enCommon = {
     itemCount: "{{count}} items",
     addItem: "Add item",
     noMatches: "No items match this filter.",
+    /* The same note the wishlist carries, word for word: the two lists are arranged with
+       the same gesture, and saying it two ways would read as two gestures. */
+    longPressHint: "Long press on an entry to reorder",
+    dragWhileFiltered: "Clear the filters to reorder",
     filters: {
       open: "Filters",
       openLabel: "Filter the shelf",
@@ -147,7 +151,7 @@ const enCommon = {
     coverImageRemove: "Use the catalogue's",
     viewCover: "View the cover full screen",
     oneEntryHint: "One entry per release. Adding it twice just reopens this sheet.",
-    longPressHint: "Long-press to reorder",
+    longPressHint: "Long press on an entry to reorder",
     // The box over the list, not the one on the add screen: that one searches a catalogue,
     // this one narrows what is already on your list.
     filterPlaceholder: "Search your wishlist",
@@ -156,13 +160,6 @@ const enCommon = {
     dragWhileFiltered: "Clear the search to reorder",
     alsoOwn_one: "You own one other {{artist}} record",
     alsoOwn_other: "You own {{count}} other {{artist}} records",
-    sort: {
-      NEWEST: "Newest first",
-      OLDEST: "Oldest first",
-      ARTIST: "By artist",
-      TITLE: "By title",
-      MANUAL: "Your order",
-    },
   },
   undo: {
     wishSatisfied: "Off the wishlist",
@@ -1205,6 +1202,8 @@ const deCommon: CommonSchema = {
     itemCount: "{{count}} Exemplare",
     addItem: "Hinzufügen",
     noMatches: "Keine Einträge passen zu diesem Filter.",
+    longPressHint: "Lange auf einen Eintrag drücken zum Umsortieren",
+    dragWhileFiltered: "Filter zurücksetzen zum Umsortieren",
     filters: {
       open: "Filter",
       openLabel: "Das Regal filtern",
@@ -1322,20 +1321,13 @@ const deCommon: CommonSchema = {
     viewCover: "Cover im Vollbild ansehen",
     oneEntryHint:
       "Ein Eintrag pro Veröffentlichung. Ein zweites Mal öffnet nur dieses Fenster wieder.",
-    longPressHint: "Lange drücken zum Umsortieren",
+    longPressHint: "Lange auf einen Eintrag drücken zum Umsortieren",
     filterPlaceholder: "Wunschliste durchsuchen",
     filterClear: "Suche leeren",
     filterNoMatches: "Auf der Liste steht nichts, das so heißt.",
     dragWhileFiltered: "Suche leeren zum Umsortieren",
     alsoOwn_one: "Du hast eine weitere Platte von {{artist}}",
     alsoOwn_other: "Du hast {{count}} weitere Platten von {{artist}}",
-    sort: {
-      NEWEST: "Neueste zuerst",
-      OLDEST: "Älteste zuerst",
-      ARTIST: "Nach Künstler",
-      TITLE: "Nach Titel",
-      MANUAL: "Deine Reihenfolge",
-    },
   },
   undo: {
     wishSatisfied: "Von der Wunschliste",

@@ -11,7 +11,6 @@ import {
   catalogueKeyOf,
   catalogueKeysOf,
   filterWishlist,
-  hasManualOrder,
   isManualReleaseId,
   manualOrderWrites,
   moveWish,
@@ -190,11 +189,6 @@ export function useWishlistLogic() {
     void wishlist.refetch();
   }, [syncNow, wishlist]);
 
-  const chooseSort = useMutation({
-    mutationFn: (next: WishSort) => writeWishlistSort(store, next),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["wishlistSort"] }),
-  });
-
   /**
    * Dropping a row renumbers the list and switches the sort to "Your order".
    *
@@ -256,7 +250,6 @@ export function useWishlistLogic() {
     refreshing,
     refetch,
     sort,
-    manual: hasManualOrder(items),
     /**
      * The catalogue's artwork: the sleeve of the pressing this entry was made from, and the
      * album's only when there is no pressing or the mirror has never seen it.
@@ -281,7 +274,6 @@ export function useWishlistLogic() {
      * "on its way" belongs to artwork that genuinely is.
      */
     pictureOf: (item: WishlistItem): string | null => ownPhotos.get(item.id) ?? null,
-    setSort: (next: WishSort) => chooseSort.mutate(next),
     /**
      * The held order is applied here, synchronously, and not inside the mutation — the
      * drag clears itself in the same breath, so both land in one React commit and the
