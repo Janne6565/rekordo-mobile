@@ -710,8 +710,24 @@ export function DragSortItem({
    * side. Off, the drop is invisible, because a list of displaced tiles and the reordered
    * list are the same picture.
    */
+  /*
+   * The view is rebuilt when a carry starts and again when it ends, rather than restyled.
+   *
+   * A blunt instrument, chosen after the alternative was measured and found wanting. With
+   * the drop instrumented and read back off the device, React's tree was provably correct
+   * at every step — the order right, `carrying` and `carryingKey` both cleared — and a row
+   * still was not drawn. Reanimated writes view properties straight onto the native view,
+   * outside React's knowledge, and something it wrote outlived React taking the style
+   * back; naming every property in `RESTING` did not reclaim it either.
+   *
+   * A view that is destroyed cannot carry anything over. The cost is that the row's
+   * subtree remounts twice per drag, which is why a cover that has been on screen before
+   * no longer re-introduces itself (see `ReleaseArt`'s `SEEN`) — without that this would
+   * trade one flicker for another.
+   */
   return (
     <Animated.View
+      key={carrying ? "carrying" : "idle"}
       style={[style, carrying ? animated : RESTING, carriedHere ? HIDDEN : null]}
       onLayout={onLayout}
     >
@@ -759,10 +775,15 @@ export function uniformSlots({
 /**
  * Where an item sits when it is not getting out of anything's way.
  *
- * Stated rather than left off: Reanimated writes transforms straight onto the native view,
- * so a style that simply stops mentioning them leaves the last ones in place.
+ * Every property the carry can touch is named, including the opacity that only React sets
+ * now: Reanimated writes straight onto the native view, so a style that stops *mentioning*
+ * a property leaves whatever was last written there. Naming them is what hands the view
+ * back.
  */
-const RESTING = { transform: [{ translateX: 0 }, { translateY: 0 }] } as const;
+const RESTING = {
+  opacity: 1,
+  transform: [{ translateX: 0 }, { translateY: 0 }],
+} as const;
 
 /** The record in the air. Its place is kept open; the overlay draws the tile itself. */
 const HIDDEN = { opacity: 0 } as const;
