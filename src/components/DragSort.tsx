@@ -102,8 +102,17 @@ export const CARRY = {
   scale: 1.07,
   /** Neighbours opening a gap. Quick and a little soft -- they are getting out of the way. */
   shift: { damping: 20, stiffness: 220, mass: 0.55 },
-  /** The record landing. Stiffer: it is being set down, not thrown. */
-  drop: { damping: 24, stiffness: 300, mass: 0.6 },
+  /**
+   * The record landing. Stiffer than the neighbours': it is being set down, not thrown.
+   *
+   * This one is also the whole of the wait between letting go and the list looking normal
+   * again — the drop is handed to React when this spring comes to rest, so that the
+   * reorder and the carry clearing happen in one frame. At `damping: 24, stiffness: 300`
+   * that was a damping ratio of 0.89, a 50ms time constant and a settle somewhere around
+   * 300ms, which is a long time to watch a record you have already put down. Damped to
+   * 0.98 instead — near critical, so it no longer overshoots — it is nearer 150ms.
+   */
+  drop: { damping: 34, stiffness: 500, mass: 0.6 },
   /** How near an edge, in points, before the list starts moving on its own. */
   edge: 88,
   /** Points a second at the very edge, tapering to nothing at the top of that band. */
