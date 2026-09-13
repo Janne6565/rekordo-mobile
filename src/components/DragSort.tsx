@@ -210,6 +210,17 @@ export function useDragSort({
   const fingerY = useSharedValue(0);
   /** How far the list has scrolled itself during this carry, so the item stays under the finger. */
   const scrolled = useSharedValue(0);
+  /**
+   * True from the moment the finger lifts until the record has been handed to React.
+   *
+   * Read by the edge-scroll frame callback, which is otherwise still running: it is
+   * switched off through `runOnJS`, which is a message to the other thread and not an
+   * instruction that has already happened. One more frame was enough — it adds to
+   * `carriedY`, and writing to a shared value *cancels* the animation on it, so the drop
+   * spring died and called back with `finished: false`. The carry then never ended: its
+   * row stayed hidden and every tap stayed swallowed, until the next drag replaced it.
+   */
+  const settling = useSharedValue(false);
 
   const [carrying, setCarrying] = useState<number | null>(null);
   const [carryingKey, setCarryingKey] = useState<string | null>(null);
@@ -281,7 +292,7 @@ export function useDragSort({
    * from under the finger at exactly the speed the list is scrolling.
    */
   const frame = useFrameCallback(({ timeSincePreviousFrame }) => {
-    if (active.value === -1) return;
+    if (active.value === -1 || settling.value) return;
     const height = frameHeight.value;
     if (height === 0) return;
 
@@ -366,7 +377,8 @@ export function useDragSort({
     carriedX.value = 0;
     carriedY.value = 0;
     scrolled.value = 0;
-  }, [carrying, active, projected, carriedX, carriedY, scrolled]);
+    settling.value = false;
+  }, [carrying, active, projected, carriedX, carriedY, scrolled, settling]);
 
   const gesture = useMemo(
     () =>
@@ -412,6 +424,7 @@ export function useDragSort({
 
           cancelAnimation(carriedX);
           cancelAnimation(carriedY);
+          settling.value = false;
           carriedX.value = 0;
           carriedY.value = 0;
           scrolled.value = 0;
@@ -439,6 +452,9 @@ export function useDragSort({
           if (from === -1) return;
           const to = projected.value === -1 ? from : projected.value;
 
+          // Before anything else, and on this thread: the frame callback must stop adding
+          // to the carry now, not whenever the other thread gets the message.
+          settling.value = true;
           runOnJS(runFrames)(false);
           runOnJS(land)();
 
@@ -450,8 +466,18 @@ export function useDragSort({
           const restX = own === undefined || target === undefined ? 0 : target.x - own.x;
           const restY = own === undefined || target === undefined ? 0 : target.y - own.y;
           carriedX.value = withSpring(restX, CARRY.drop);
-          carriedY.value = withSpring(restY, CARRY.drop, (settled) => {
-            if (settled !== true) return;
+          carriedY.value = withSpring(restY, CARRY.drop, () => {
+            /*
+             * The record is handed over however the settle ended.
+             *
+             * This used to return unless the spring reported `finished`, which made the
+             * whole drop conditional on an animation being allowed to complete — and an
+             * interrupted settle still means the finger is up and the record has to be put
+             * down somewhere. The one thing that must not happen is finishing a carry that
+             * has already been replaced by the next one, which is what the guard below is
+             * actually for.
+             */
+            if (active.value !== from) return;
             /*
              * Hands over to React and writes nothing else.
              *
@@ -478,6 +504,7 @@ export function useDragSort({
       carriedY,
       scrolled,
       fingerY,
+      settling,
       project,
       lift,
       land,
