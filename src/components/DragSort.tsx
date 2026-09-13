@@ -102,17 +102,6 @@ export const CARRY = {
   scale: 1.07,
   /** Neighbours opening a gap. Quick and a little soft -- they are getting out of the way. */
   shift: { damping: 20, stiffness: 220, mass: 0.55 },
-  /**
-   * The record landing. Stiffer than the neighbours': it is being set down, not thrown.
-   *
-   * This one is also the whole of the wait between letting go and the list looking normal
-   * again — the drop is handed to React when this spring comes to rest, so that the
-   * reorder and the carry clearing happen in one frame. At `damping: 24, stiffness: 300`
-   * that was a damping ratio of 0.89, a 50ms time constant and a settle somewhere around
-   * 300ms, which is a long time to watch a record you have already put down. Damped to
-   * 0.98 instead — near critical, so it no longer overshoots — it is nearer 150ms.
-   */
-  drop: { damping: 34, stiffness: 500, mass: 0.6 },
   /** How near an edge, in points, before the list starts moving on its own. */
   edge: 88,
   /** Points a second at the very edge, tapering to nothing at the top of that band. */
@@ -467,39 +456,26 @@ export function useDragSort({
           runOnJS(runFrames)(false);
           runOnJS(land)();
 
+          /*
+           * Straight into the gap, with no settle at all.
+           *
+           * There was a spring here, and because the drop is handed to React only once the
+           * landing is over, that spring *was* the wait between letting go and the list
+           * being ordinary again — a couple of hundred milliseconds spent watching a record
+           * you had already put down. Set outright, it is in its slot on the next frame,
+           * and the gap was being held open for it the whole way, so there is nothing left
+           * for an animation to explain.
+           *
+           * The values are still written rather than left alone: the overlay may draw one
+           * more frame before React commits, and it should draw the record where it has
+           * landed rather than where the finger was.
+           */
           const all = slots.value;
           const own = all[from];
           const target = all[to];
-          // Spring into the gap that has been held open rather than vanishing from under
-          // the finger: the landing is the half of the gesture that says the drop was taken.
-          const restX = own === undefined || target === undefined ? 0 : target.x - own.x;
-          const restY = own === undefined || target === undefined ? 0 : target.y - own.y;
-          carriedX.value = withSpring(restX, CARRY.drop);
-          carriedY.value = withSpring(restY, CARRY.drop, () => {
-            /*
-             * The record is handed over however the settle ended.
-             *
-             * This used to return unless the spring reported `finished`, which made the
-             * whole drop conditional on an animation being allowed to complete — and an
-             * interrupted settle still means the finger is up and the record has to be put
-             * down somewhere. The one thing that must not happen is finishing a carry that
-             * has already been replaced by the next one, which is what the guard below is
-             * actually for.
-             */
-            if (active.value !== from) return;
-            /*
-             * Hands over to React and writes nothing else.
-             *
-             * Clearing `active` and the offsets here — which the first version did — is
-             * the bug somebody sees as the record blinking back to where it came from.
-             * These are UI-thread writes, so every tile snapped to an identity transform
-             * on the very next frame, while React still held the *old* order: one or two
-             * frames of the old arrangement, dropped record back in its old place, and
-             * then the new order arriving as a flash. The reset now happens after the
-             * commit that reorders the list — see `useDragSort`'s effect.
-             */
-            runOnJS(finish)(from, to);
-          });
+          carriedX.value = own === undefined || target === undefined ? 0 : target.x - own.x;
+          carriedY.value = own === undefined || target === undefined ? 0 : target.y - own.y;
+          runOnJS(finish)(from, to);
         }),
     [
       enabled,
