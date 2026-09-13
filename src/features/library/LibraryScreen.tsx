@@ -10,11 +10,11 @@ import { useCoverPhotos } from "@/features/photos/useCoverPhotos";
 import { RollSheet } from "@/features/roll/RollSheet";
 import type { CatalogueGap } from "@/local/settings";
 import { colors, fonts } from "@/theme/colors";
-import type { Format, LibrarySort } from "@janne6565/rekordo-shared";
+import type { Format } from "@janne6565/rekordo-shared";
 import { catalogArtShown, copyFormat, copyPreviewSrc } from "@janne6565/rekordo-shared";
-import { CHOOSABLE_LIBRARY_SORTS, FORMAT_LABELS } from "@janne6565/rekordo-shared";
+import { FORMAT_LABELS } from "@janne6565/rekordo-shared";
 import { useRouter } from "expo-router";
-import { ChevronDown, Dices, Plus, SlidersHorizontal } from "lucide-react-native";
+import { Dices, Plus, SlidersHorizontal } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from "react-native";
@@ -46,18 +46,22 @@ export function LibraryScreen() {
    * has to name the filter rather than merely admit to one — a shelf that says "filtered"
    * and nothing else sends you back into the sheet to find out what you did.
    */
-  const shelfLine = [
-    t(`library.sort.${logic.sort}`),
-    ...(logic.filtered
-      ? [
-          logic.format === "ALL" ? null : FORMAT_LABELS[logic.format as Format],
-          logic.minRating === null ? null : t("roll.poolRated", { count: logic.minRating }),
-        ]
-      : []),
-  ]
-    .filter((part) => part !== null)
-    .join(" · ");
-  const [sortOpen, setSortOpen] = useState(false);
+  /**
+   * What the shelf currently is — the filter, and only the filter.
+   *
+   * It used to name the order too, and to open a menu that changed it. The order is the
+   * one you arrange by hand now, so there is nothing here to pick: a shelf is in the order
+   * you put it in, and saying so in a line nobody can act on is furniture. Blank when
+   * nothing is narrowing the grid.
+   */
+  const shelfLine = logic.filtered
+    ? [
+        logic.format === "ALL" ? null : FORMAT_LABELS[logic.format as Format],
+        logic.minRating === null ? null : t("roll.poolRated", { count: logic.minRating }),
+      ]
+        .filter((part) => part !== null)
+        .join(" · ")
+    : null;
   const copyIds = useMemo(() => logic.rows.map((row) => row.copy.id), [logic.rows]);
   const covers = useCoverPhotos(copyIds);
   // Left here on the way past so the detail screen can be swiped through *this* order --
@@ -110,12 +114,18 @@ export function LibraryScreen() {
     (row: LibraryRow) => (
       <GridItem
         row={row}
-        onPress={() => router.push(`/copies/${row.copy.id}`)}
+        // A record that was picked up was not tapped, even if it was set straight back
+        // down: the press and the carry are different gestures that do not know about
+        // each other, so without this, lifting a record opened it.
+        onPress={() => {
+          if (drag.carriedRecently()) return;
+          router.push(`/copies/${row.copy.id}`);
+        }}
         previewUri={copyPreviewSrc(row.copy, covers.get(row.copy.id) ?? null)}
         allowCatalogArt={catalogArtShown(row.copy, true)}
       />
     ),
-    [router, covers],
+    [router, covers, drag],
   );
 
   return (
@@ -150,23 +160,9 @@ export function LibraryScreen() {
        * rating floor now, and there was nowhere in a single row of chips to put it.
        */}
       <View style={styles.meta}>
-        {/* The line that says what the shelf is now opens the menu that changes it — a
-            label nobody could act on was the only thing here before. */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t("library.sort.open")}
-          onPress={() => setSortOpen((was) => !was)}
-          disabled={logic.collectionEmpty}
-          style={styles.metaSort}
-          hitSlop={6}
-        >
-          <Text style={styles.metaText} numberOfLines={1}>
-            {shelfLine}
-          </Text>
-          {logic.collectionEmpty ? null : (
-            <ChevronDown size={12} color={colors.inkSubtle} strokeWidth={2} />
-          )}
-        </Pressable>
+        <Text style={styles.metaText} numberOfLines={1}>
+          {shelfLine}
+        </Text>
         <View style={styles.metaActions}>
           <Pressable
             accessibilityRole="button"
@@ -200,31 +196,6 @@ export function LibraryScreen() {
           </Pressable>
         </View>
       </View>
-
-      {sortOpen && (
-        <View style={styles.sortMenu}>
-          {[
-            ...CHOOSABLE_LIBRARY_SORTS,
-            // "Your order" is not offered until a drag has produced one: it is the order
-            // *you* built, and picking it before it exists would sort by nothing.
-            ...(logic.arranged ? (["MANUAL"] as const) : []),
-          ].map((option: LibrarySort) => (
-            <Pressable
-              key={option}
-              accessibilityRole="button"
-              onPress={() => {
-                logic.setSort(option);
-                setSortOpen(false);
-              }}
-              style={styles.sortOption}
-            >
-              <Text style={[styles.sortOptionText, logic.sort === option && styles.sortOptionOn]}>
-                {t(`library.sort.${option}`)}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
 
       <CatalogueNotice gap={logic.catalogueGap} />
 
@@ -357,26 +328,13 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 12,
   },
-  metaText: { flexShrink: 1, fontSize: 11.5, fontWeight: "500", color: colors.inkMuted },
+  metaText: { flex: 1, fontSize: 11.5, fontWeight: "500", color: colors.inkMuted },
   metaActions: { flexDirection: "row", alignItems: "center", gap: 12 },
   metaAction: { flexDirection: "row", alignItems: "center", gap: 5 },
   metaActionOff: { opacity: 0.5 },
   metaActionText: { fontSize: 11.5, fontWeight: "600", color: colors.accent },
   metaActionTextOff: { color: colors.inkSubtle },
   metaRule: { width: StyleSheet.hairlineWidth, height: 12, backgroundColor: "rgba(25,23,19,0.16)" },
-  metaSort: { flex: 1, flexDirection: "row", alignItems: "center", gap: 5, minWidth: 0 },
-  sortMenu: {
-    marginHorizontal: 18,
-    marginBottom: 10,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.line,
-    overflow: "hidden",
-  },
-  sortOption: { paddingHorizontal: 14, paddingVertical: 11 },
-  sortOptionText: { fontSize: 13, color: colors.ink },
-  sortOptionOn: { fontWeight: "700" },
   notice: {
     marginHorizontal: 18,
     marginBottom: 10,

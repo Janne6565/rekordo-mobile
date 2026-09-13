@@ -8,7 +8,6 @@ import {
   applyCopyPatch,
   catalogueKeyOf,
   catalogueKeysOf,
-  hasArrangedOrder,
   inRollPool,
   libraryOrderWrites,
   moveCopy,
@@ -159,25 +158,12 @@ export function useLibraryLogic() {
     },
   });
 
-  const chooseSort = useMutation({
-    mutationFn: (next: LibrarySort) => writeLibrarySort(store, next),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["librarySort"] }),
-  });
-
   const rows =
     showingArrived && outcome !== null ? shelf.filter((row) => arrived.has(row.copy.id)) : shelf;
 
   return {
     rows,
     sort,
-    setSort: useCallback(
-      (next: LibrarySort) => {
-        chooseSort.mutate(next);
-      },
-      [chooseSort],
-    ),
-    /** Whether "Your order" is a thing a menu can offer yet. */
-    arranged: useMemo(() => hasArrangedOrder(all.map((row) => row.copy)), [all]),
     /**
      * The held order is applied *here*, synchronously, and not inside the mutation.
      *

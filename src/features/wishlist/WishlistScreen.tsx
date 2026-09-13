@@ -63,7 +63,11 @@ export function WishlistScreen() {
   const rowOf = useCallback(
     (item: WishlistItem) => (
       <WishRow
-        onPress={() => router.push({ pathname: "/wishlist/[wishId]", params: { wishId: item.id } })}
+        // A row that was picked up was not tapped — see the shelf.
+        onPress={() => {
+          if (drag.carriedRecently()) return;
+          router.push({ pathname: "/wishlist/[wishId]", params: { wishId: item.id } });
+        }}
         art={
           /* The wanted format is the silhouette, not the artwork: an entry for the vinyl of
              a record you already have on CD should look like the thing you are hunting. */
@@ -82,7 +86,7 @@ export function WishlistScreen() {
         trailing={formatRelativeTime(item.createdAt, i18n.language)}
       />
     ),
-    [router, logic, t, i18n.language],
+    [router, logic, t, i18n.language, drag],
   );
 
   return (

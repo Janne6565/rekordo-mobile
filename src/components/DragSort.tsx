@@ -129,6 +129,18 @@ export interface DragSort {
   readonly onScroll: ReturnType<typeof useAnimatedScrollHandler>;
   /** The index being carried, on the JS side: drives the overlay and `scrollEnabled`. */
   readonly carrying: number | null;
+  /**
+   * Whether a press arriving right now belongs to a carry rather than to a tap.
+   *
+   * A tile is a `Pressable` and the carry is a gesture-handler `Pan`; the two do not know
+   * about each other, so lifting a record and setting it down again still ended in an
+   * ordinary press and the record opened. Wrap a tile's `onPress` in this.
+   *
+   * It cannot be a question about when the carry *ended*: the press fires the instant the
+   * finger lifts, and the carry is not over until the record has sprung into its slot a
+   * few hundred milliseconds later. So it answers for a carry still settling too.
+   */
+  readonly carriedRecently: () => boolean;
   /** Hands measured geometry in, for lists whose items are not all one size. */
   readonly measure: boolean;
   /**
@@ -185,6 +197,14 @@ export function useDragSort({
 
   const [carrying, setCarrying] = useState<number | null>(null);
   const measured = useRef<Slot[]>([]);
+  /**
+   * The same fact as `carrying`, readable at once.
+   *
+   * `carriedRecently` is called from a press handler, which runs before React has
+   * re-rendered with the state — a ref is the only version of this that is true yet.
+   */
+  const lifted = useRef(false);
+  const endedAt = useRef(0);
 
   const tick = useCallback(() => void Haptics.selectionAsync(), []);
   const lift = useCallback(() => void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), []);
@@ -285,12 +305,25 @@ export function useDragSort({
    * starts an async write here — and reorders when it resolves — puts the old order back
    * on screen in between.
    */
+  const began = useCallback((index: number) => {
+    lifted.current = true;
+    setCarrying(index);
+  }, []);
+
   const finish = useCallback(
     (from: number, to: number) => {
+      lifted.current = false;
+      endedAt.current = Date.now();
       setCarrying(null);
       if (from !== to) onDrop(from, to);
     },
     [onDrop],
+  );
+
+  /** See {@link DragSort.carriedRecently}. */
+  const carriedRecently = useCallback(
+    () => lifted.current || Date.now() - endedAt.current < SETTLED_MS,
+    [],
   );
 
   /**
@@ -358,7 +391,7 @@ export function useDragSort({
           scrolled.value = 0;
           active.value = found;
           projected.value = found;
-          runOnJS(setCarrying)(found);
+          runOnJS(began)(found);
           runOnJS(lift)();
           runOnJS(runFrames)(true);
         })
@@ -424,6 +457,7 @@ export function useDragSort({
       land,
       runFrames,
       finish,
+      began,
     ],
   );
 
@@ -439,10 +473,19 @@ export function useDragSort({
     origin,
     onScroll,
     carrying,
+    carriedRecently,
     measure,
     measured,
   };
 }
+
+/**
+ * How long after a carry a press is still the carry's rather than a tap's.
+ *
+ * Covers the frames between the finger lifting and the drop settling, and nothing more: a
+ * window long enough to swallow a deliberate second tap would be its own bug.
+ */
+const SETTLED_MS = 300;
 
 const DragSortContext = createContext<DragSort | null>(null);
 
