@@ -89,6 +89,7 @@ export function LibraryScreen() {
   const shelfRef = useAnimatedRef<Animated.FlatList<LibraryRow>>();
   const drag = useDragSort({
     count: logic.rows.length,
+    keyAt: (index) => logic.rows[index]?.copy.id ?? String(index),
     scrollRef: shelfRef,
     origin: { x: GRID.padding, y: GRID.top },
     // A position in a narrowed shelf means nothing in the whole one, so a filtered shelf
@@ -160,10 +161,21 @@ export function LibraryScreen() {
        * rating floor now, and there was nowhere in a single row of chips to put it.
        */}
       <View style={styles.meta}>
-        <Text style={styles.metaText} numberOfLines={1}>
-          {shelfLine}
-        </Text>
+        {/* The two things you do to the shelf lead the row now that the sort control that
+            used to hold this side is gone; what the shelf *is* trails them, and is blank
+            unless something is narrowing it. */}
         <View style={styles.metaActions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("library.filters.openLabel")}
+            onPress={() => setFiltering(true)}
+            style={styles.metaAction}
+            hitSlop={6}
+          >
+            <SlidersHorizontal size={13} color={colors.accent} strokeWidth={1.75} />
+            <Text style={styles.metaActionText}>{t("library.filters.open")}</Text>
+          </Pressable>
+          <View style={styles.metaRule} />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t("roll.openLabel")}
@@ -183,18 +195,10 @@ export function LibraryScreen() {
               {t("roll.open")}
             </Text>
           </Pressable>
-          <View style={styles.metaRule} />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("library.filters.openLabel")}
-            onPress={() => setFiltering(true)}
-            style={styles.metaAction}
-            hitSlop={6}
-          >
-            <SlidersHorizontal size={13} color={colors.accent} strokeWidth={1.75} />
-            <Text style={styles.metaActionText}>{t("library.filters.open")}</Text>
-          </Pressable>
         </View>
+        <Text style={styles.metaText} numberOfLines={1}>
+          {shelfLine}
+        </Text>
       </View>
 
       <CatalogueNotice gap={logic.catalogueGap} />
@@ -220,7 +224,7 @@ export function LibraryScreen() {
             refreshing={logic.refreshing || logic.loading}
             onRefresh={() => void logic.refetch()}
             renderItem={({ item, index }) => (
-              <DragSortItem index={index} style={styles.item}>
+              <DragSortItem index={index} id={(item as LibraryRow).copy.id} style={styles.item}>
                 <View onLayout={index === 0 ? measureCell : undefined}>
                   {tileOf(item as LibraryRow)}
                 </View>
@@ -328,7 +332,13 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 12,
   },
-  metaText: { flex: 1, fontSize: 11.5, fontWeight: "500", color: colors.inkMuted },
+  metaText: {
+    flex: 1,
+    textAlign: "right",
+    fontSize: 11.5,
+    fontWeight: "500",
+    color: colors.inkMuted,
+  },
   metaActions: { flexDirection: "row", alignItems: "center", gap: 12 },
   metaAction: { flexDirection: "row", alignItems: "center", gap: 5 },
   metaActionOff: { opacity: 0.5 },

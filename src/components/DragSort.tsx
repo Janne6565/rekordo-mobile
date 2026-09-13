@@ -10,7 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, unstable_batchedUpdates } from "react-native";
 import { Gesture, GestureDetector, type PanGesture } from "react-native-gesture-handler";
 import Animated, {
   type AnimatedRef,
@@ -130,6 +130,19 @@ export interface DragSort {
   /** The index being carried, on the JS side: drives the overlay and `scrollEnabled`. */
   readonly carrying: number | null;
   /**
+   * Which *record* is in the air, rather than where it was standing.
+   *
+   * Hiding the carried row by its index is only correct while the list has not moved, and
+   * the list moves at exactly the moment the carry ends. Should those two ever land in
+   * separate commits — and `runOnJS` does not promise to batch them — then for one frame
+   * the index points into a list that has already reordered, and the row hidden is the one
+   * that moved *into* that position: the entry after the one you dropped, gone.
+   *
+   * An identity cannot go stale that way. The worst it can do is hide the record that
+   * genuinely was being carried, for a frame, where it has just been put down.
+   */
+  readonly carryingKey: string | null;
+  /**
    * Whether a press arriving right now belongs to a carry rather than to a tap.
    *
    * A tile is a `Pressable` and the carry is a gesture-handler `Pan`; the two do not know
@@ -158,6 +171,7 @@ export interface DragSort {
 
 export function useDragSort({
   count,
+  keyAt,
   scrollRef,
   onDrop,
   origin,
@@ -165,6 +179,8 @@ export function useDragSort({
   measure = false,
 }: {
   readonly count: number;
+  /** What to call the item at an index, so a carry can be remembered by identity. */
+  readonly keyAt?: (index: number) => string;
   /** The list being arranged, so the carry can scroll it. */
   // biome-ignore lint/suspicious/noExplicitAny: an AnimatedRef is invariant in its element
   readonly scrollRef: AnimatedRef<any>;
@@ -196,6 +212,7 @@ export function useDragSort({
   const scrolled = useSharedValue(0);
 
   const [carrying, setCarrying] = useState<number | null>(null);
+  const [carryingKey, setCarryingKey] = useState<string | null>(null);
   const measured = useRef<Slot[]>([]);
   /**
    * The same fact as `carrying`, readable at once.
@@ -305,17 +322,26 @@ export function useDragSort({
    * starts an async write here — and reorders when it resolves — puts the old order back
    * on screen in between.
    */
-  const began = useCallback((index: number) => {
-    lifted.current = true;
-    setCarrying(index);
-  }, []);
+  const began = useCallback(
+    (index: number) => {
+      lifted.current = true;
+      setCarrying(index);
+      setCarryingKey(keyAt === undefined ? String(index) : keyAt(index));
+    },
+    [keyAt],
+  );
 
   const finish = useCallback(
     (from: number, to: number) => {
       lifted.current = false;
       endedAt.current = Date.now();
-      setCarrying(null);
-      if (from !== to) onDrop(from, to);
+      // One commit, guaranteed: `runOnJS` hands control back outside anything React is
+      // batching, and the carry ending and the list reordering have to be the same frame.
+      unstable_batchedUpdates(() => {
+        setCarrying(null);
+        setCarryingKey(null);
+        if (from !== to) onDrop(from, to);
+      });
     },
     [onDrop],
   );
@@ -473,6 +499,7 @@ export function useDragSort({
     origin,
     onScroll,
     carrying,
+    carryingKey,
     carriedRecently,
     measure,
     measured,
@@ -574,10 +601,13 @@ function CarriedItem({
  */
 export function DragSortItem({
   index,
+  id,
   children,
   style,
 }: {
   readonly index: number;
+  /** This item's identity — what hides it while it is in the air. See `carryingKey`. */
+  readonly id?: string;
   readonly children: ReactNode;
   readonly style?: object;
 }) {
@@ -597,7 +627,8 @@ export function DragSortItem({
    * record up and putting it straight back down reorders nothing, rebuilds nothing, and
    * left the tile invisible. Opacity set from here is opacity React can take away again.
    */
-  const carriedHere = drag !== null && drag.carrying === index;
+  const carriedHere =
+    drag !== null && (id === undefined ? drag.carrying === index : drag.carryingKey === id);
 
   // The shared values, never the controller: see `CarriedItem`.
   const active = drag?.active;

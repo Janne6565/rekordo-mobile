@@ -49,6 +49,7 @@ export function WishlistScreen() {
   const listRef = useAnimatedRef<Animated.ScrollView>();
   const drag = useDragSort({
     count: logic.items.length,
+    keyAt: (index) => logic.items[index]?.id ?? String(index),
     scrollRef: listRef,
     origin: { x: LIST.padding, y: LIST.padding },
     // Rows are not all one height — an entry with a note is taller — so each reports its
@@ -210,7 +211,7 @@ export function WishlistScreen() {
             }
           >
             {logic.items.map((item, index) => (
-              <DragSortItem key={item.id} index={index} style={styles.row}>
+              <DragSortItem key={item.id} id={item.id} index={index} style={styles.row}>
                 {rowOf(item)}
               </DragSortItem>
             ))}
