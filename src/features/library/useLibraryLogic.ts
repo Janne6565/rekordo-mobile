@@ -149,12 +149,20 @@ export function useLibraryLogic() {
       );
       await writeLibrarySort(store, "MANUAL");
     },
+    /**
+     * The held order is let go only once the shelf has actually been re-read.
+     *
+     * `refetchQueries` rather than `invalidateQueries`: invalidating resolves without
+     * waiting for a fetch it did not itself start, and the drop starts one by changing the
+     * order the shelf is read in. Released too early, the grid falls back to whatever the
+     * query is holding — which at that moment is the previous key's rows, the order from
+     * before the drag. On the web that was measured at 149ms, between a correct 61ms and a
+     * correct 185ms: exactly the flicker.
+     */
     onSettled: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["copies"] }),
-        queryClient.invalidateQueries({ queryKey: ["librarySort"] }),
-      ]);
+      await queryClient.refetchQueries({ queryKey: ["copies"], type: "active" });
       setDropped(null);
+      void queryClient.invalidateQueries({ queryKey: ["librarySort"] });
     },
   });
 
@@ -176,10 +184,15 @@ export function useLibraryLogic() {
     arrange: useCallback(
       (from: number, to: number) => {
         const next = moveCopy(shelf, from, to);
+        // Both in the commit that puts the record down: the held order, and the order the
+        // shelf is now read in. The sort lives in the store, so the cache is told directly
+        // rather than waiting for the write and a re-read — which would move the query key
+        // halfway through the drop and leave its fetch in the air.
         setDropped(next.map((row) => row.copy.id));
+        queryClient.setQueryData(["librarySort"], "MANUAL");
         arrange.mutate({ next });
       },
-      [arrange, shelf],
+      [arrange, shelf, queryClient],
     ),
     /**
      * Whether a record may be picked up at all -- the whole shelf, or none of it. The

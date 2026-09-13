@@ -207,10 +207,14 @@ export function useWishlistLogic() {
     },
     // `onSettled` rather than `onSuccess`: a write that failed still has to let the held
     // order go, or the list would show a move that never happened until the app restarts.
+    /**
+     * The held order is let go only once the list has actually been re-read — see the
+     * shelf, which had the same shape and the same flicker.
+     */
     onSettled: async () => {
-      await invalidate();
-      await queryClient.invalidateQueries({ queryKey: ["wishlistSort"] });
+      await queryClient.refetchQueries({ queryKey: ["wishlist"], type: "active" });
       setDropped(null);
+      void queryClient.invalidateQueries({ queryKey: ["wishlistSort"] });
     },
   });
 
@@ -282,7 +286,11 @@ export function useWishlistLogic() {
      */
     reorder: (from: number, to: number) => {
       const next = moveWish(held, from, to);
+      // Both in the commit that puts the row down: the held order, and the order the list
+      // is now in. The sort lives in the store, so the cache is told directly rather than
+      // waiting for the write and a re-read.
       setDropped(next.map((item) => item.id));
+      queryClient.setQueryData(["wishlistSort"], "MANUAL");
       reorder.mutate({ next });
     },
     edit: (item: WishlistItem, patch: WishPatch) => edit.mutate({ item, patch }),
