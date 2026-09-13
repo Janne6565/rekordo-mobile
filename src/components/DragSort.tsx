@@ -540,22 +540,33 @@ export function DragSortItem({
 }) {
   const drag = useContext(DragSortContext);
   const carrying = drag !== null && drag.carrying !== null;
+  /**
+   * Whether *this* is the record in the air, as a React value rather than a shared one.
+   *
+   * Hiding it is React's job and nothing else's. It used to be `opacity: 0` inside the
+   * worklet, and Reanimated writes that straight onto the native view: React never learns
+   * of it, so when the animated style stops being applied React diffs its own styles,
+   * finds that neither mentions opacity, emits no change, and the view keeps the zero.
+   * The record is put down and is simply not there.
+   *
+   * A reorder hid that, by accident — `FlatList` re-keys every row when the order changes,
+   * so the tile was rebuilt as a fresh native view with no stale opacity on it. Picking a
+   * record up and putting it straight back down reorders nothing, rebuilds nothing, and
+   * left the tile invisible. Opacity set from here is opacity React can take away again.
+   */
+  const carriedHere = drag !== null && drag.carrying === index;
+
   // The shared values, never the controller: see `CarriedItem`.
   const active = drag?.active;
   const projected = drag?.projected;
   const slots = drag?.slots;
 
+  /** Movement only. Opacity belongs to React — see `carriedHere`. */
   const animated = useAnimatedStyle(() => {
     if (active === undefined || projected === undefined || slots === undefined) return {};
     const from = active.value;
     const to = projected.value;
-    if (from === -1 || to === -1) {
-      return { opacity: 1, transform: [{ translateX: 0 }, { translateY: 0 }] };
-    }
-    if (index === from) {
-      // Its place is being kept open; the overlay has the tile itself.
-      return { opacity: 0, transform: [{ translateX: 0 }, { translateY: 0 }] };
-    }
+    if (from === -1 || to === -1 || index === from) return RESTING;
 
     // Where this item goes if the record is set down now: one step along, into the hole it
     // left behind.
@@ -565,9 +576,8 @@ export function DragSortItem({
 
     const here = slots.value[index];
     const there = slots.value[moved];
-    if (here === undefined || there === undefined) return { opacity: 1 };
+    if (here === undefined || there === undefined) return RESTING;
     return {
-      opacity: 1,
       transform: [
         { translateX: withSpring(there.x - here.x, CARRY.shift) },
         { translateY: withSpring(there.y - here.y, CARRY.shift) },
@@ -600,7 +610,10 @@ export function DragSortItem({
    * list are the same picture.
    */
   return (
-    <Animated.View style={carrying ? [style, animated] : [style, RESTING]} onLayout={onLayout}>
+    <Animated.View
+      style={[style, carrying ? animated : RESTING, carriedHere ? HIDDEN : null]}
+      onLayout={onLayout}
+    >
       {children}
     </Animated.View>
   );
@@ -643,16 +656,15 @@ export function uniformSlots({
 }
 
 /**
- * What an item wears when nothing is being carried — and it has to say so out loud.
+ * Where an item sits when it is not getting out of anything's way.
  *
- * Reanimated writes opacity and transform straight onto the native view from the UI
- * thread. React knows nothing about that, so when the animated style stops being applied
- * it diffs its *own* previous style against the next one, finds neither mentions opacity,
- * emits no change — and the view keeps whatever was last written to it. For the record
- * that was just being carried, that is `opacity: 0`: it is dropped, and then it is simply
- * not there. Naming the resting values makes the diff non-empty and puts them back.
+ * Stated rather than left off: Reanimated writes transforms straight onto the native view,
+ * so a style that simply stops mentioning them leaves the last ones in place.
  */
-const RESTING = { opacity: 1, transform: [{ translateX: 0 }, { translateY: 0 }] } as const;
+const RESTING = { transform: [{ translateX: 0 }, { translateY: 0 }] } as const;
+
+/** The record in the air. Its place is kept open; the overlay draws the tile itself. */
+const HIDDEN = { opacity: 0 } as const;
 
 const styles = StyleSheet.create({
   area: { flex: 1 },
