@@ -275,9 +275,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginTop: 12,
-    // No gap of its own any more. It carried one so the first entry would not crowd the
-    // sort pill that used to stand here; with the pill gone this row is a single line of
-    // small text, and 12 on top of the list's own 18 read as the list starting late.
+    // Half the 12 it carried under the old sort pill: 12 on top of the list's own 18 read
+    // as the list starting late, but none at all left the hint sitting on the first entry.
+    marginBottom: 6,
   },
   dragHint: { flexDirection: "row", alignItems: "center", gap: 5 },
   dragHintText: { fontSize: 11.5, color: colors.inkMuted },
