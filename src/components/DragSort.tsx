@@ -141,6 +141,15 @@ export interface DragSort {
    */
   readonly carryingKey: string | null;
   /**
+   * How many times each record's view has been rebuilt after a carry.
+   *
+   * Only records a carry actually moved are rebuilt — see `DragSortItem`'s key. Rebuilding
+   * every tile was the first answer to Reanimated residue, and on the shelf it meant every
+   * sleeve got a brand-new native image on every drop: all albums flashing white while
+   * they decoded again.
+   */
+  readonly generations: ReadonlyMap<string, number>;
+  /**
    * Whether a press arriving right now belongs to a carry rather than to a tap.
    *
    * A tile is a `Pressable` and the carry is a gesture-handler `Pan`; the two do not know
@@ -219,9 +228,24 @@ export function useDragSort({
    * row stayed hidden and every tap stayed swallowed, until the next drag replaced it.
    */
   const settling = useSharedValue(false);
+  /**
+   * The furthest the drop position has reached in each direction during this carry.
+   *
+   * A row can hold a displacement it was given mid-carry and later taken back from, so the
+   * rows that may need rebuilding are not just those between pick-up and drop but every
+   * row the projection ever passed over. Everything outside this range only ever received
+   * an identity transform, and keeps its view.
+   */
+  const seenLo = useSharedValue(-1);
+  const seenHi = useSharedValue(-1);
 
   const [carrying, setCarrying] = useState<number | null>(null);
   const [carryingKey, setCarryingKey] = useState<string | null>(null);
+  const [generations, setGenerations] = useState<ReadonlyMap<string, number>>(() => new Map());
+  // Read at the drop, before React has the new order: indices from the carry still mean
+  // the list as it was, which is exactly what this mapping describes.
+  const keyAtRef = useRef(keyAt);
+  keyAtRef.current = keyAt;
   const measured = useRef<Slot[]>([]);
   /**
    * The same fact as `carrying`, readable at once.
@@ -272,6 +296,15 @@ export function useDragSort({
       return best;
     },
     [slots, carriedX, carriedY],
+  );
+
+  useAnimatedReaction(
+    () => projected.value,
+    (now) => {
+      if (now === -1) return;
+      if (seenLo.value === -1 || now < seenLo.value) seenLo.value = now;
+      if (seenHi.value === -1 || now > seenHi.value) seenHi.value = now;
+    },
   );
 
   /** A tick every time the answer changes, and only then. */
@@ -341,7 +374,7 @@ export function useDragSort({
   );
 
   const finish = useCallback(
-    (from: number, to: number) => {
+    (from: number, to: number, lo: number, hi: number) => {
       // The other half of the same guard, on this thread: `runOnJS` is a message, and two
       // of them can be in flight before either arrives.
       if (!lifted.current) return;
@@ -349,9 +382,18 @@ export function useDragSort({
       endedAt.current = Date.now();
       // One commit, guaranteed: `runOnJS` hands control back outside anything React is
       // batching, and the carry ending and the list reordering have to be the same frame.
+      const touched: string[] = [];
+      for (let index = lo; index <= hi; index += 1) {
+        touched.push(keyAtRef.current === undefined ? String(index) : keyAtRef.current(index));
+      }
       unstable_batchedUpdates(() => {
         setCarrying(null);
         setCarryingKey(null);
+        setGenerations((was) => {
+          const next = new Map(was);
+          for (const id of touched) next.set(id, (next.get(id) ?? 0) + 1);
+          return next;
+        });
         if (from !== to) onDrop(from, to);
       });
     },
@@ -431,6 +473,8 @@ export function useDragSort({
           scrolled.value = 0;
           active.value = found;
           projected.value = found;
+          seenLo.value = found;
+          seenHi.value = found;
           runOnJS(began)(found);
           runOnJS(lift)();
           runOnJS(runFrames)(true);
@@ -484,7 +528,12 @@ export function useDragSort({
           const target = all[to];
           carriedX.value = own === undefined || target === undefined ? 0 : target.x - own.x;
           carriedY.value = own === undefined || target === undefined ? 0 : target.y - own.y;
-          runOnJS(finish)(from, to);
+          runOnJS(finish)(
+            from,
+            to,
+            Math.min(seenLo.value === -1 ? from : seenLo.value, from, to),
+            Math.max(seenHi.value === -1 ? from : seenHi.value, from, to),
+          );
         }),
     [
       enabled,
@@ -499,6 +548,8 @@ export function useDragSort({
       scrolled,
       fingerY,
       settling,
+      seenLo,
+      seenHi,
       project,
       lift,
       land,
@@ -521,6 +572,7 @@ export function useDragSort({
     onScroll,
     carrying,
     carryingKey,
+    generations,
     carriedRecently,
     measure,
     measured,
@@ -650,6 +702,7 @@ export function DragSortItem({
    */
   const carriedHere =
     drag !== null && (id === undefined ? drag.carrying === index : drag.carryingKey === id);
+  const generation = drag !== null && id !== undefined ? (drag.generations.get(id) ?? 0) : 0;
 
   // The shared values, never the controller: see `CarriedItem`.
   const active = drag?.active;
@@ -705,7 +758,8 @@ export function DragSortItem({
    * list are the same picture.
    */
   /*
-   * The view is rebuilt when a carry starts and again when it ends, rather than restyled.
+   * The view of a record a carry moved is rebuilt when that carry ends, rather than
+   * restyled — and nothing else is rebuilt, ever.
    *
    * A blunt instrument, chosen after the alternative was measured and found wanting. With
    * the drop instrumented and read back off the device, React's tree was provably correct
@@ -714,14 +768,16 @@ export function DragSortItem({
    * outside React's knowledge, and something it wrote outlived React taking the style
    * back; naming every property in `RESTING` did not reclaim it either.
    *
-   * A view that is destroyed cannot carry anything over. The cost is that the row's
-   * subtree remounts twice per drag, which is why a cover that has been on screen before
-   * no longer re-introduces itself (see `ReleaseArt`'s `SEEN`) — without that this would
-   * trade one flicker for another.
+   * A view that is destroyed cannot carry anything over. The first version rebuilt every
+   * item at both ends of every carry, and that had a price `SEEN` could not pay: `SEEN`
+   * stops a known cover fading in, but a brand-new native image still has to decode, so
+   * on every drop every sleeve on the shelf showed its light placeholder for a few frames.
+   * Only records the projection ever passed over can hold a displacement, so only those
+   * are rebuilt — and on the shelf those rows are re-keyed by `FlatList` anyway.
    */
   return (
     <Animated.View
-      key={carrying ? "carrying" : "idle"}
+      key={`g${generation}`}
       style={[style, carrying ? animated : RESTING, carriedHere ? HIDDEN : null]}
       onLayout={onLayout}
     >
