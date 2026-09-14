@@ -18,7 +18,7 @@ Build profiles (`eas.json`):
 |---|---|---|
 | `development` | internal, dev-client | Metro host's LAN address, else staging |
 | `preview` | internal (ad-hoc link) | staging — `EXPO_PUBLIC_API_BASE` |
-| `production` | store, `autoIncrement` | `https://rekordo.jannekeipert.de` |
+| `production` | store, `autoIncrement` | `https://rekordo.de` |
 
 ---
 

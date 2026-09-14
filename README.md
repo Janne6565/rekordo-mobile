@@ -18,8 +18,8 @@ falls back to its format silhouette because the metadata proxy answered nothing.
 | | |
 |---|---|
 | `bun start` / `bun run dev` | a backend on this machine, port 8080 |
-| `bun run start:staging` / `dev:staging` | `rekordo-staging.jannekeipert.de` |
-| `bun run start:prod` / `dev:prod` | `rekordo.jannekeipert.de` |
+| `bun run start:staging` / `dev:staging` | `staging.rekordo.de` |
+| `bun run start:prod` / `dev:prod` | `rekordo.de` |
 
 The `dev:*` variants need a dev-client build; the plain ones run in Expo Go. **OAuth needs
 a dev client** — the callback returns to `musiccollector://`, which Expo Go does not own.

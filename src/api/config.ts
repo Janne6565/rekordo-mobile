@@ -13,8 +13,8 @@ import Constants from "expo-constants";
  * `bun run dev:prod`, which set the override below. Keep those script names and this
  * comment in step.
  */
-const PRODUCTION = "https://rekordo.jannekeipert.de";
-const STAGING = "https://rekordo-staging.jannekeipert.de";
+const PRODUCTION = "https://rekordo.de";
+const STAGING = "https://staging.rekordo.de";
 
 function developmentBase(): string | null {
   const hostUri = Constants.expoConfig?.hostUri;
