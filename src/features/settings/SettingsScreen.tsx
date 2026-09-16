@@ -1,4 +1,4 @@
-import { RisingSheet } from "@/components/RisingSheet";
+import { RisingSheet, useSheetBottom } from "@/components/RisingSheet";
 import { CURRENCIES, type CurrencyCode, currencyChipLabel } from "@/domain/currency";
 import { formatRelativeTime } from "@/domain/relativeTime";
 import { useSettingsLogic } from "@/features/settings/useSettingsLogic";
@@ -300,11 +300,17 @@ function PickerSheet({
   readonly selected: string;
   readonly onChoose: (value: string) => void;
 }) {
+  const bottom = useSheetBottom(SHEET_PAD);
+
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.scrim} onPress={onClose} accessibilityRole="button" />
       <View style={styles.sheetHolder} pointerEvents="box-none">
-        <RisingSheet visible={open} style={styles.sheet} onDismiss={onClose}>
+        <RisingSheet
+          visible={open}
+          style={[styles.sheet, { paddingBottom: bottom }]}
+          onDismiss={onClose}
+        >
           <View style={styles.grabber} />
           <Text style={styles.sheetTitle}>{title}</Text>
           <Text style={styles.sheetNote}>{note}</Text>
@@ -331,6 +337,9 @@ function PickerSheet({
     </Modal>
   );
 }
+
+/** What the option sheet sits on when the system asks for nothing; see `useSheetBottom`. */
+const SHEET_PAD = 34;
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.paper },
@@ -449,7 +458,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 18,
     paddingHorizontal: 20,
     paddingTop: 10,
-    paddingBottom: 34,
+    paddingBottom: SHEET_PAD,
   },
   grabber: {
     alignSelf: "center",

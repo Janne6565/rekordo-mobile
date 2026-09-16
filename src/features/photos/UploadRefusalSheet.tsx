@@ -1,5 +1,5 @@
 import { accountStorage } from "@/api/storage";
-import { RisingSheet } from "@/components/RisingSheet";
+import { RisingSheet, useSheetBottom } from "@/components/RisingSheet";
 import { formatMegabytes } from "@/features/account/storageReading";
 import { useStore } from "@/local/StoreProvider";
 import { markRefusalSeen, readUploadRefusal } from "@/local/uploadRefusal";
@@ -64,6 +64,8 @@ export function UploadRefusalSheet() {
     await queryClient.invalidateQueries({ queryKey: ["uploadRefusal"] });
   };
 
+  const bottom = useSheetBottom(SHEET_PAD);
+
   const showStorage = async () => {
     await dismiss();
     router.push("/(tabs)/you");
@@ -79,7 +81,7 @@ export function UploadRefusalSheet() {
       <View style={styles.scrim}>
         <RisingSheet
           visible={pending !== null}
-          style={styles.sheet}
+          style={[styles.sheet, { paddingBottom: bottom }]}
           onDismiss={() => void dismiss()}
         >
           <View style={styles.grabber} />
@@ -107,6 +109,9 @@ export function UploadRefusalSheet() {
   );
 }
 
+/** What the sheet sits on when the system asks for nothing; see `useSheetBottom`. */
+const SHEET_PAD = 40;
+
 const styles = StyleSheet.create({
   scrim: { flex: 1, backgroundColor: "rgba(25,23,19,0.38)", justifyContent: "flex-end" },
   sheet: {
@@ -115,7 +120,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 18,
     paddingHorizontal: 22,
     paddingTop: 12,
-    paddingBottom: 40,
+    paddingBottom: SHEET_PAD,
   },
   grabber: {
     width: 36,

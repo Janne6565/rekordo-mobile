@@ -1,6 +1,6 @@
 import { releaseDisambiguation } from "@/api/releases";
 import { ReleaseArt } from "@/components/ReleaseArt";
-import { RisingSheet } from "@/components/RisingSheet";
+import { RisingSheet, useSheetBottom } from "@/components/RisingSheet";
 import { type AddDestination, useAddSheetLogic } from "@/features/add/useAddSheetLogic";
 import { colors, fonts } from "@/theme/colors";
 import type { Format, Release } from "@janne6565/rekordo-shared";
@@ -65,13 +65,14 @@ export function AddSheet({
 }) {
   const { t } = useTranslation();
   const logic = useAddSheetLogic(release, destination, onClose, pressingChosen, prefer);
+  const bottom = useSheetBottom(SHEET_PAD);
   const shelf = logic.destination === "SHELF";
 
   return (
     <Modal transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.scrim} onPress={onClose} accessibilityRole="button" />
       <View style={styles.sheetHolder} pointerEvents="box-none">
-        <RisingSheet style={styles.sheet} onDismiss={onClose}>
+        <RisingSheet style={[styles.sheet, { paddingBottom: bottom }]} onDismiss={onClose}>
           <View style={styles.grabber} />
 
           {logic.picking ? (
@@ -267,6 +268,9 @@ function PressingRow({
   );
 }
 
+/** What the panel sits on when the system asks for nothing; see `useSheetBottom`. */
+const SHEET_PAD = 30;
+
 const MONO = "ui-monospace";
 
 const styles = StyleSheet.create({
@@ -286,7 +290,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 22,
     paddingHorizontal: 18,
     paddingTop: 8,
-    paddingBottom: 30,
+    paddingBottom: SHEET_PAD,
   },
   grabber: {
     width: 38,

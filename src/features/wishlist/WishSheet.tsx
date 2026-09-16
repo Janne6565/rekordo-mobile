@@ -1,7 +1,7 @@
 import { lookupAlbumCovers, lookupPressingCovers } from "@/api/releases";
 import { KeyboardLift } from "@/components/KeyboardLift";
 import { ReleaseArt } from "@/components/ReleaseArt";
-import { RisingSheet } from "@/components/RisingSheet";
+import { RisingSheet, useSheetBottom } from "@/components/RisingSheet";
 import {
   type PhotoSource,
   type PickedImage,
@@ -265,6 +265,8 @@ export function WishSheet({ onClose, release = null, entry = null }: WishSheetPr
     },
   });
 
+  const bottom = useSheetBottom(SHEET_PAD);
+
   const canSave =
     entry !== null ||
     release !== null ||
@@ -277,7 +279,10 @@ export function WishSheet({ onClose, release = null, entry = null }: WishSheetPr
       <KeyboardLift style={styles.sheetWrap}>
         <RisingSheet style={styles.sheet} onDismiss={onClose}>
           <View style={styles.grabber} />
-          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            contentContainerStyle={[styles.content, { paddingBottom: bottom }]}
+            keyboardShouldPersistTaps="handled"
+          >
             {heading !== null ? (
               <View style={styles.subject}>
                 <View style={styles.subjectThumb}>
@@ -420,6 +425,9 @@ export function WishSheet({ onClose, release = null, entry = null }: WishSheetPr
   );
 }
 
+/** What the sheet sits on when the system asks for nothing; see `useSheetBottom`. */
+const SHEET_PAD = 34;
+
 const styles = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(25,23,19,0.35)" },
   sheetWrap: { flex: 1, justifyContent: "flex-end" },
@@ -437,7 +445,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.line,
     marginTop: 10,
   },
-  content: { padding: 18, paddingBottom: 34 },
+  content: { padding: 18, paddingBottom: SHEET_PAD },
   subject: {
     flexDirection: "row",
     alignItems: "center",

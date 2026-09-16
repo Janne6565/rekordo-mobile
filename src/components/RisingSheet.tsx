@@ -7,6 +7,7 @@ import {
   PanResponder,
   type ViewStyle,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /**
  * The panel of a bottom sheet, rising into place while the scrim behind it only fades.
@@ -63,6 +64,30 @@ interface RisingSheetProps {
    */
   readonly onDismiss?: () => void;
   readonly children: React.ReactNode;
+}
+
+/**
+ * The gap the app keeps between a sheet's last line and whatever the system owns below it.
+ *
+ * Small on purpose: it is breathing room above the bar, not a second margin.
+ */
+const SYSTEM_GAP = 14;
+
+/**
+ * The bottom padding a sheet panel should carry, given the one its design asks for.
+ *
+ * A panel sits on the bottom edge of the screen, which on Android is where the navigation
+ * bar is drawn -- 48dp of it with three buttons. A fixed padding tuned against the iOS home
+ * indicator is less than that, so the last control in the sheet ends up behind the bar:
+ * "Put it on the shelf instead" was sitting on top of the Android back button.
+ *
+ * The designed padding is kept wherever the system leaves room for it, and only grown where
+ * the system bar actually reaches further -- rather than adding the inset on top, which
+ * would double the air under every sheet on a phone with a home indicator.
+ */
+export function useSheetBottom(design: number) {
+  const insets = useSafeAreaInsets();
+  return Math.max(design, insets.bottom + SYSTEM_GAP);
 }
 
 export function RisingSheet({ visible = true, style, onDismiss, children }: RisingSheetProps) {

@@ -1,5 +1,5 @@
 import { KeyboardLift } from "@/components/KeyboardLift";
-import { RisingSheet } from "@/components/RisingSheet";
+import { RisingSheet, useSheetBottom } from "@/components/RisingSheet";
 import { ChallengeGate } from "@/features/auth/ChallengeGate";
 import type { useAccountLogic } from "@/features/auth/useAccountLogic";
 import { colors, fonts } from "@/theme/colors";
@@ -34,6 +34,7 @@ import {
 export function EmailAuthSheet({ logic, onClose }: EmailAuthSheetProps) {
   const { t } = useTranslation();
   const registering = logic.mode === "REGISTER";
+  const bottom = useSheetBottom(SHEET_PAD);
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
@@ -46,7 +47,10 @@ export function EmailAuthSheet({ logic, onClose }: EmailAuthSheetProps) {
       <KeyboardLift style={styles.holder}>
         <RisingSheet style={styles.sheet} onDismiss={onClose}>
           <View style={styles.grabber} />
-          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            contentContainerStyle={[styles.content, { paddingBottom: bottom }]}
+            keyboardShouldPersistTaps="handled"
+          >
             <View style={styles.header}>
               <Text style={styles.title}>
                 {registering ? t("auth.createTitle") : t("auth.withEmail")}
@@ -333,6 +337,9 @@ function errorText(
   return translate(`auth.error.${error}`);
 }
 
+/** What the sheet sits on when the system asks for nothing; see `useSheetBottom`. */
+const SHEET_PAD = 34;
+
 const styles = StyleSheet.create({
   scrim: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(25,23,19,0.42)" },
   holder: { flex: 1, justifyContent: "flex-end" },
@@ -350,7 +357,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(25,23,19,0.16)",
     marginTop: 10,
   },
-  content: { padding: 18, paddingTop: 16, paddingBottom: 34, gap: 14 },
+  content: { padding: 18, paddingTop: 16, paddingBottom: SHEET_PAD, gap: 14 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   title: { flex: 1, fontFamily: fonts.serif, fontSize: 24, color: colors.ink },
   field: { gap: 7 },

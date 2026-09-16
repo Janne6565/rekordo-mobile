@@ -1,5 +1,5 @@
 import { KeyboardLift } from "@/components/KeyboardLift";
-import { RisingSheet } from "@/components/RisingSheet";
+import { RisingSheet, useSheetBottom } from "@/components/RisingSheet";
 import { isDeletionConfirmed } from "@/features/legal/confirmDeletion";
 import { colors, fonts } from "@/theme/colors";
 import { Download } from "lucide-react-native";
@@ -34,6 +34,7 @@ export function DeleteAccountSheet({
   const { t } = useTranslation();
   const [typed, setTyped] = useState("");
   const confirmed = isDeletionConfirmed(typed);
+  const bottom = useSheetBottom(SHEET_PAD);
 
   return (
     <Modal animationType="fade" transparent onRequestClose={onCancel}>
@@ -44,7 +45,7 @@ export function DeleteAccountSheet({
         style={styles.scrim}
       />
       <KeyboardLift style={styles.sheetHolder}>
-        <RisingSheet style={styles.sheet} onDismiss={onCancel}>
+        <RisingSheet style={[styles.sheet, { paddingBottom: bottom }]} onDismiss={onCancel}>
           <View style={styles.grabber} />
           <Text style={styles.title}>{t("legal.delete.title")}</Text>
           <Text style={styles.body}>{t("legal.delete.body", { count: copyCount ?? 0 })}</Text>
@@ -91,6 +92,9 @@ export function DeleteAccountSheet({
   );
 }
 
+/** What the sheet sits on when the system asks for nothing; see `useSheetBottom`. */
+const SHEET_PAD = 38;
+
 const styles = StyleSheet.create({
   scrim: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(25,23,19,0.32)" },
   sheetHolder: { flex: 1, justifyContent: "flex-end" },
@@ -100,7 +104,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     paddingHorizontal: 22,
     paddingTop: 22,
-    paddingBottom: 38,
+    paddingBottom: SHEET_PAD,
   },
   grabber: {
     width: 38,
