@@ -40,7 +40,7 @@ concurrency:
 jobs:
   # Gate every build on the same checks as ci.yml — steps mirror ci.yml exactly.
   test:
-    name: typecheck · test
+    name: lint · typecheck · test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -53,6 +53,7 @@ jobs:
           # @janne6565/rekordo-shared is on GitHub Packages, which authenticates
           # reads even for a public package.
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: bun run lint
       - run: bun run typecheck
       - run: bun run test
 

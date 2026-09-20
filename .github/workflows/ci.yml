@@ -19,5 +19,6 @@ jobs:
           # @janne6565/rekordo-shared is on GitHub Packages, which authenticates
           # reads even for a public package.
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: bun run lint
       - run: bun run typecheck
       - run: bun run test
