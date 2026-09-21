@@ -2,7 +2,7 @@ import {
   lookupAlbumCovers,
   lookupByBarcode,
   lookupPressingCovers,
-  searchReleases,
+  searchAlbums,
 } from "@/api/releases";
 import { EXAMPLE_ALBUM_IDS } from "@/features/add/exampleReleases";
 import { useAddCopy } from "@/features/add/useAddCopy";
@@ -10,8 +10,8 @@ import { useArtistSearchLogic } from "@/features/add/useArtistSearchLogic";
 import { useWishPhotos } from "@/features/wishlist/useWishPhotos";
 import { useStore } from "@/local/StoreProvider";
 import { clearRecentSearches, readRecentSearches, rememberSearch } from "@/local/settings";
-import type { Copy, Format, Release, WishlistItem } from "@janne6565/rekordo-shared";
-import { catalogueKeyOf, isManualReleaseId } from "@janne6565/rekordo-shared";
+import type { Album, Copy, Format, Release, WishlistItem } from "@janne6565/rekordo-shared";
+import { albumResults, catalogueKeyOf, isManualReleaseId } from "@janne6565/rekordo-shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -64,14 +64,29 @@ export function useAddLogic(seedTerm = "") {
   const [format, setFormat] = useState<AddFormatFilter>("ALL");
   /** The example whose pressings are on their way, so its tile can say so. */
 
+  /**
+   * A typed query answers with records; a scanned one still answers with pressings.
+   *
+   * Not the same question. A barcode is printed on an object, so the scan has already
+   * picked the pressing out for you and listing the record instead would throw that away.
+   * Typing a name cannot pick anything, which is the whole reason search moved up a level.
+   */
+  const scanned = BARCODE.test(submitted.trim());
+
+  const albumsQuery = useQuery({
+    queryKey: ["albumSearch", submitted],
+    enabled: submitted.trim() !== "" && !scanned,
+    queryFn: () => searchAlbums(submitted.trim()),
+  });
+
   const resultsQuery = useQuery({
     queryKey: ["releaseSearch", submitted],
-    enabled: submitted.trim() !== "",
-    queryFn: () => {
-      const query = submitted.trim();
-      return BARCODE.test(query) ? lookupByBarcode(query) : searchReleases(query);
-    },
+    enabled: submitted.trim() !== "" && scanned,
+    queryFn: () => lookupByBarcode(submitted.trim()),
   });
+
+  /** Folded and split the way the web folds them, from the one function in shared. */
+  const { records, singles } = albumResults(albumsQuery.data ?? []);
 
   const { add, addingMbid } = useAddCopy();
 
@@ -253,20 +268,25 @@ export function useAddLogic(seedTerm = "") {
     canSubmit: query !== "",
     results,
     /** How many came back before the chips narrowed them, for the empty-filter wording. */
-    unfilteredCount: all.length,
+    unfilteredCount: scanned ? all.length : records.length + singles.length,
+    records,
+    singles,
+    scanned,
     format,
     setFormat,
     /** A barcode names one pressing, so the format chips have nothing to offer there. */
-    showFormatFilter: !barcode && all.length > 0,
+    // Gone for a record search: a record has no format until somebody says which copy
+    // they own, which is the question the sheet asks. A scan already named a pressing.
+    showFormatFilter: barcode && all.length > 0,
     artists,
     /**
      * True from the keystroke, not from the request: the skeletons stand in for the wait
      * as a whole, and a debounce the reader cannot see is still a wait.
      */
-    searching: waiting || resultsQuery.isFetching,
-    failed: resultsQuery.isError && !waiting,
+    searching: waiting || (scanned ? resultsQuery.isFetching : albumsQuery.isFetching),
+    failed: (scanned ? resultsQuery.isError : albumsQuery.isError) && !waiting,
     /** Ask the archive again. The query is keyed on the term, so this repeats it. */
-    retry: () => void resultsQuery.refetch(),
+    retry: () => void (scanned ? resultsQuery : albumsQuery).refetch(),
     hasSearched: submitted.trim() !== "" || waiting,
     submittedTerm: submitted.trim(),
     /** True when the thing with no results was a scanned or pasted barcode (screen 8c). */
@@ -333,6 +353,14 @@ export function useAddLogic(seedTerm = "") {
     },
     addingMbid,
     ownedCopy: (release: Release) => owned.data?.byRelease.get(release.id) ?? null,
+    /**
+     * Whether a record already on the shelf is this one.
+     *
+     * Read by album id, because a copy that never named a pressing is keyed by its album
+     * and matching on the pressing alone would leave it unmarked -- the row would offer to
+     * add a record that is already there.
+     */
+    ownedAlbum: (album: Album) => owned.data?.byRelease.get(album.albumId) !== undefined,
     /**
      * Whether the sample plate still earns its place, and so whether the wishlist gets it.
      *

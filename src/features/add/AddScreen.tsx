@@ -1,4 +1,5 @@
 import { releaseDisambiguation } from "@/api/releases";
+import { AlbumArt } from "@/components/AlbumArt";
 import { ReleaseArt } from "@/components/ReleaseArt";
 import { RetryNotice } from "@/components/RetryNotice";
 import { Skeleton } from "@/components/Skeleton";
@@ -11,11 +12,21 @@ import { FORMAT_FILTERS, useAddLogic } from "@/features/add/useAddLogic";
 import type { AddDestination } from "@/features/add/useAddSheetLogic";
 import { useCross } from "@/lib/motion";
 import { colors, fonts } from "@/theme/colors";
-import type { Artist, Copy, Format, Release, WishlistItem } from "@janne6565/rekordo-shared";
-import { CONDITION_SHORT, FORMAT_LABELS } from "@janne6565/rekordo-shared";
+import type {
+  Album,
+  Artist,
+  Copy,
+  Format,
+  RecordGroup,
+  Release,
+  WishlistItem,
+} from "@janne6565/rekordo-shared";
+import { CONDITION_SHORT, FORMAT_LABELS, editionLabel } from "@janne6565/rekordo-shared";
 import { useRouter } from "expo-router";
 import {
   ArrowUpLeft,
+  ChevronDown,
+  ChevronUp,
   Clock,
   CopyPlus,
   LibraryBig,
@@ -214,6 +225,21 @@ function Body({
    * with the search, and MusicBrainz is capped at one request a second — repeating it
    * would buy a blank second and the same answer.
    */
+  /**
+   * A record row raises the same sheet an artist's album does.
+   *
+   * `pressingChosen: false` is the whole difference from a scan. Nothing about a typed
+   * query names a pressing, so the sheet opens with none chosen and offers the list,
+   * rather than writing down whichever one the catalogue happened to rank first.
+   */
+  const openRecord = (album: Album) =>
+    onConfirm({
+      release: albumAsRelease(album, Date.now()),
+      destination,
+      chosen: false,
+      pressingChosen: false,
+    });
+
   const openArtist = (artist: Artist) =>
     router.push({
       pathname: "/artists/[mbid]",
@@ -233,8 +259,10 @@ function Body({
   return (
     <Animated.FlatList
       style={{ opacity: crossing }}
-      data={logic.results}
-      keyExtractor={(release) => release.id}
+      data={(logic.scanned ? logic.results : logic.records) as readonly (Release | RecordGroup)[]}
+      keyExtractor={(item: Release | RecordGroup) =>
+        "album" in item ? item.album.albumId : item.id
+      }
       contentContainerStyle={styles.list}
       keyboardShouldPersistTaps="handled"
       /*
@@ -250,7 +278,9 @@ function Body({
         <View>
           <ArtistResults logic={logic.artists} onOpen={openArtist} />
           <View style={styles.releasesHeader}>
-            <Text style={styles.section}>{t("add.releases")}</Text>
+            <Text style={styles.section}>
+              {logic.scanned ? t("add.releases") : t("add.records")}
+            </Text>
             {/* The deck puts the way into manual entry here, beside the releases it is an
                 alternative to: the moment you can see the archive's answer is not the one
                 you are holding is the moment you want to type it in yourself. */}
@@ -265,16 +295,25 @@ function Body({
           {t("add.noneOfFormat", { format: FORMAT_LABELS[logic.format as Format] })}
         </Text>
       }
-      renderItem={({ item }) => (
-        <ResultRow
-          release={item}
-          owned={logic.ownedCopy(item)}
-          /* One button, and it does not pick a side: the sheet it raises offers both
-             destinations, so the row no longer has to ask which one before it knows
-             anything about the record. */
-          onAdd={() => onConfirm({ release: item, destination, chosen: false })}
-        />
-      )}
+      ListFooterComponent={
+        logic.scanned || logic.singles.length === 0 ? null : (
+          <SinglesBlock singles={logic.singles} onOpen={openRecord} />
+        )
+      }
+      renderItem={({ item }: { item: Release | RecordGroup }) =>
+        "album" in item ? (
+          <RecordRow group={item} logic={logic} onOpen={openRecord} />
+        ) : (
+          <ResultRow
+            release={item}
+            owned={logic.ownedCopy(item)}
+            /* One button, and it does not pick a side: the sheet it raises offers both
+               destinations, so the row no longer has to ask which one before it knows
+               anything about the record. */
+            onAdd={() => onConfirm({ release: item, destination, chosen: false })}
+          />
+        )
+      }
     />
   );
 }
@@ -574,6 +613,154 @@ function BarcodeNotFound({
  * Owning one already does not take the button away. It says so under the title and steps
  * the button back, because a second pressing is an ordinary thing to buy.
  */
+/**
+ * One record, with the other editions of it folded underneath.
+ *
+ * Four rows reading "Nevermind" became one with a count you can open. Each edition is
+ * named only by what makes it different, because the record's own title is on the row
+ * above it and repeating it in every child is noise.
+ */
+function RecordRow({
+  group,
+  logic,
+  onOpen,
+}: {
+  readonly group: RecordGroup;
+  readonly logic: Logic;
+  readonly onOpen: (album: Album) => void;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const { album, editions } = group;
+
+  return (
+    <View>
+      <Pressable accessibilityRole="button" onPress={() => onOpen(album)} style={styles.row}>
+        <View style={styles.thumb}>
+          <AlbumArt album={album} size={48} />
+        </View>
+        <View style={styles.rowBody}>
+          <Text style={styles.rowTitle} numberOfLines={1}>
+            {album.title}
+          </Text>
+          <Text style={styles.rowSubtitle} numberOfLines={1}>
+            {album.artistName}
+            {album.year === null ? "" : ` · ${album.year}`}
+          </Text>
+          {editions.length > 0 && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: open }}
+              onPress={() => setOpen((was) => !was)}
+              style={[styles.editionChip, open && styles.editionChipOpen]}
+              /* The chip is inside the row's own pressable, so its tap has to be stopped
+                 from also opening the sheet behind it. */
+              hitSlop={4}
+            >
+              <Text style={[styles.editionChipText, open && styles.editionChipTextOpen]}>
+                {t("add.otherEditions", { count: editions.length })}
+              </Text>
+              {open ? (
+                <ChevronUp
+                  size={11}
+                  color={open ? "#ffffff" : colors.accentStrong}
+                  strokeWidth={2.2}
+                />
+              ) : (
+                <ChevronDown size={11} color={colors.accentStrong} strokeWidth={2.2} />
+              )}
+            </Pressable>
+          )}
+        </View>
+        <View style={[styles.rowAdd, logic.ownedAlbum(album) && styles.rowAddOwned]}>
+          {logic.ownedAlbum(album) ? (
+            <CopyPlus size={15} color={colors.inkMuted} strokeWidth={1.8} />
+          ) : (
+            <Plus size={16} color="#ffffff" strokeWidth={2} />
+          )}
+        </View>
+      </Pressable>
+
+      {open && (
+        <View style={styles.editions}>
+          <Text style={styles.editionsHint}>{t("add.editionsHint")}</Text>
+          {editions.map((edition) => (
+            <Pressable
+              key={edition.albumId}
+              accessibilityRole="button"
+              onPress={() => onOpen(edition)}
+              style={styles.editionRow}
+            >
+              <Text style={styles.editionTitle} numberOfLines={1}>
+                {editionLabel(edition)}
+              </Text>
+              {edition.year !== null && <Text style={styles.editionYear}>{edition.year}</Text>}
+            </Pressable>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+/** How many singles show before the block offers the rest. */
+const SHOWN_SINGLES = 2;
+
+/**
+ * The singles and EPs that merely share a title with a record above.
+ *
+ * Their own block, because a title search drowns in them and Apple sends no type field --
+ * that literal text in the title is the only thing that identifies them.
+ */
+function SinglesBlock({
+  singles,
+  onOpen,
+}: {
+  readonly singles: readonly Album[];
+  readonly onOpen: (album: Album) => void;
+}) {
+  const { t } = useTranslation();
+  const [all, setAll] = useState(false);
+  const shown = all ? singles : singles.slice(0, SHOWN_SINGLES);
+  const hidden = singles.length - shown.length;
+
+  return (
+    <View>
+      <View style={styles.releasesHeader}>
+        <Text style={styles.section}>{t("add.singlesAndEps")}</Text>
+        <Text style={styles.sectionCount}>{singles.length}</Text>
+      </View>
+      {shown.map((single) => (
+        <Pressable
+          key={single.albumId}
+          accessibilityRole="button"
+          onPress={() => onOpen(single)}
+          style={styles.row}
+        >
+          <View style={styles.singleThumb}>
+            <AlbumArt album={single} size={38} />
+          </View>
+          <View style={styles.rowBody}>
+            <Text style={styles.singleTitle} numberOfLines={1}>
+              {single.title}
+            </Text>
+            <Text style={styles.rowSubtitle} numberOfLines={1}>
+              {single.artistName}
+              {single.year === null ? "" : ` · ${single.year}`}
+            </Text>
+          </View>
+        </Pressable>
+      ))}
+      {hidden > 0 && (
+        <Pressable accessibilityRole="button" onPress={() => setAll(true)} style={styles.showMore}>
+          <Text style={styles.showMoreText}>{t("add.showMoreSingles", { count: hidden })}</Text>
+          <ChevronDown size={14} color={colors.accentStrong} strokeWidth={2} />
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
 function ResultRow({
   release,
   owned,
@@ -675,6 +862,48 @@ const styles = StyleSheet.create({
   },
   cancel: { fontSize: 13.5, fontWeight: "500", color: colors.inkMuted },
   hint: { fontSize: 13, color: colors.inkMuted, padding: 18 },
+  sectionCount: { fontFamily: "monospace", fontSize: 10, color: colors.inkSubtle },
+  editionChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    alignSelf: "flex-start",
+    marginTop: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: "rgba(162,87,58,0.11)",
+  },
+  editionChipOpen: { backgroundColor: colors.ink },
+  editionChipText: { fontFamily: "monospace", fontSize: 10, color: colors.accentStrong },
+  editionChipTextOpen: { color: "#ffffff" },
+  editions: {
+    marginLeft: 26,
+    paddingLeft: 16,
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderLeftColor: colors.line,
+  },
+  editionsHint: { fontSize: 11.5, lineHeight: 17, color: colors.inkMuted, paddingVertical: 6 },
+  editionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 9,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.line,
+  },
+  editionTitle: { flex: 1, fontSize: 12.5, fontWeight: "600", color: colors.ink },
+  editionYear: { fontSize: 11, color: colors.inkMuted },
+  singleThumb: { width: 38, height: 38 },
+  singleTitle: { fontSize: 12.5, fontWeight: "600", color: colors.ink },
+  showMore: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 12,
+  },
+  showMoreText: { fontSize: 12.5, fontWeight: "500", color: colors.accentStrong },
   list: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 28 },
   shortcuts: { flexDirection: "row", gap: 10 },
   shortcut: {
