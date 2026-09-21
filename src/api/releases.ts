@@ -8,6 +8,7 @@ import type {
   Release,
 } from "@janne6565/rekordo-shared";
 import { FORMATS, readArchivedAlbumCovers, withArchivedCovers } from "@janne6565/rekordo-shared";
+import { PixelRatio } from "react-native";
 /**
  * Thin client over the metadata proxy.
  *
@@ -137,6 +138,8 @@ interface AlbumPayload {
   year?: number;
   primaryType?: string;
   coverArtUrl?: string;
+  /** Apple's resizable artwork, carrying literal {w}x{h} placeholders. */
+  coverArtTemplate?: string | null;
 }
 
 function toArtist(payload: ArtistPayload): Artist | null {
@@ -163,7 +166,43 @@ function toAlbum(payload: AlbumPayload): Album | null {
     year: payload.year ?? null,
     primaryType: payload.primaryType ?? null,
     coverArtUrl: payload.coverArtUrl ?? null,
+    coverArtTemplate: payload.coverArtTemplate ?? null,
   };
+}
+
+/**
+ * Records matching a query, one row per record rather than per pressing.
+ *
+ * What the add sheet lists. /search answers with pressings, and a record with ten of them
+ * fills the sheet ten times over with rows nobody can tell apart until they have already
+ * chosen one.
+ *
+ * The rows arrive flat and in relevance order; `albumResults` in shared is what turns them
+ * into the two blocks the screen draws, so the phone and the web fold them identically.
+ */
+export async function searchAlbums(query: string, limit = 25): Promise<Album[]> {
+  const payloads = await getJson<AlbumPayload[]>(
+    `/api/v1/metadata/albums/search?q=${encodeURIComponent(query)}&limit=${limit}`,
+  );
+  return payloads.map(toAlbum).filter((album): album is Album => album !== null);
+}
+
+/**
+ * One album cover at the size it is actually drawn.
+ *
+ * Apple serves a single artwork asset at any dimension through a {w}x{h} placeholder, so a
+ * row asks for the 112px it draws instead of pulling 600 and scaling it on the phone. A
+ * Discogs answer has no template and one fixed image, returned as it is; null means neither
+ * and the caller keeps its placeholder.
+ *
+ * Multiplied by the screen's pixel ratio, because a 112pt row on a 3x phone needs 336 real
+ * pixels and asking for 112 renders it soft.
+ */
+export function albumCoverUrl(album: Album, points: number): string | null {
+  const template = album.coverArtTemplate;
+  if (template == null || template === "") return album.coverArtUrl;
+  const size = String(Math.round(points * PixelRatio.get()));
+  return template.replace("{w}", size).replace("{h}", size);
 }
 
 export async function findArtists(query: string, limit = 5): Promise<Artist[]> {
