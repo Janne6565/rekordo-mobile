@@ -71,7 +71,15 @@ export function ProfileScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
       <View style={styles.bar}>
-        <Pressable onPress={() => router.back()} hitSlop={12} accessibilityRole="button">
+        {/* Alone on its bar, with no title to grow into: 20px of chevron plus 14 each side
+            is 48, which is the smallest thing Android asks anyone to hit. The label is
+            what a screen reader reads, since there is no text here to name it. */}
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={14}
+          accessibilityRole="button"
+          accessibilityLabel={t("common.back")}
+        >
           <ChevronLeft size={20} color={colors.ink} strokeWidth={1.75} />
         </Pressable>
       </View>
