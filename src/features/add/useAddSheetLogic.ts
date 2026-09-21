@@ -10,6 +10,7 @@ import {
   createCopy,
   createWishlistItem,
   pickPressing,
+  pressingList,
 } from "@janne6565/rekordo-shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Crypto from "expo-crypto";
@@ -162,7 +163,15 @@ export function useAddSheetLogic(
     },
   });
 
-  const candidates = pressings.data ?? [];
+  /**
+   * The pressings worth offering, in the order somebody holding the record reads them.
+   *
+   * Discogs answers in its own relevance order, which opened this chooser on CD 2005,
+   * Cassette 1991, CD 1995. Narrowed to the format the chips have named, because that is
+   * the same question this list answers, and oldest first because the first pressing is
+   * the one people most often mean. Shared with the web, so the two cannot drift.
+   */
+  const candidates = pressingList(pressings.data ?? [], format === "OTHER" ? null : format);
 
   return {
     destination,

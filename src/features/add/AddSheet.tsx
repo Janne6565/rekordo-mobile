@@ -121,7 +121,11 @@ export function AddSheet({
                     {[
                       logic.picked.artistName,
                       logic.picked.year === null ? null : String(logic.picked.year),
-                      FORMAT_LABELS[logic.format],
+                      // OTHER is the catalogue saying it does not know, not a format
+                      // anybody chose, and printing it as one reads like an answer. A
+                      // record reached by typing its name has no format until the chips
+                      // below are used, so the line simply leaves it out until then.
+                      logic.format === "OTHER" ? null : FORMAT_LABELS[logic.format],
                     ]
                       .filter((part) => part !== null)
                       .join(" · ")}
