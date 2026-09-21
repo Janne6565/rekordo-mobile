@@ -54,7 +54,8 @@
             "./assets/fonts/Newsreader-Regular.ttf"
           ]
         }
-      ]
+      ],
+      "./plugins/withSceneLifecycle"
     ],
     "ios": {
       "supportsTablet": true,
