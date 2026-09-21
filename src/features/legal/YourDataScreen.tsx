@@ -38,15 +38,19 @@ export function YourDataScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
+        {/* The circle keeps its own look, but the title goes inside the button with it:
+            one control, and the word is the part a thumb can actually find. */}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t("common.back")}
           onPress={() => router.back()}
-          style={styles.back}
+          style={styles.backGroup}
         >
-          <ChevronLeft size={17} color={colors.inkMuted} strokeWidth={2} />
+          <View style={styles.back}>
+            <ChevronLeft size={17} color={colors.inkMuted} strokeWidth={2} />
+          </View>
+          <Text style={styles.title}>{t("legal.yourData")}</Text>
         </Pressable>
-        <Text style={styles.title}>{t("legal.yourData")}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
@@ -189,6 +193,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 10,
   },
+  backGroup: { flexDirection: "row", alignItems: "center", gap: 12 },
   back: {
     width: 32,
     height: 32,

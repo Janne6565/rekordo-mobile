@@ -56,17 +56,20 @@ export function LegalDocumentScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
+        {/* The switch stays outside: it changes the language, not the screen you leave to. */}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t("common.back")}
           onPress={() => router.back()}
-          style={styles.back}
+          style={styles.backGroup}
         >
-          <ChevronLeft size={17} color={colors.inkMuted} strokeWidth={2} />
+          <View style={styles.back}>
+            <ChevronLeft size={17} color={colors.inkMuted} strokeWidth={2} />
+          </View>
+          <Text style={styles.title} numberOfLines={1}>
+            {document.title[language]}
+          </Text>
         </Pressable>
-        <Text style={styles.title} numberOfLines={1}>
-          {document.title[language]}
-        </Text>
         <LanguageSwitch language={language} onChoose={choose} />
       </View>
 
@@ -189,6 +192,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 10,
   },
+  backGroup: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
   back: {
     width: 32,
     height: 32,
