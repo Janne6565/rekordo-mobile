@@ -150,10 +150,17 @@ export function NotificationsScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
       <View style={styles.bar}>
-        <Pressable onPress={() => router.back()} hitSlop={12} accessibilityRole="button">
+        {/* The title is inside the button, not beside it: going back is what the whole
+            group means, and a 20px chevron is a small thing to ask a thumb to find. */}
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={12}
+          accessibilityRole="button"
+          style={styles.backGroup}
+        >
           <ChevronLeft size={20} color={colors.ink} strokeWidth={1.75} />
+          <Text style={styles.barTitle}>{t("notifications.title")}</Text>
         </Pressable>
-        <Text style={styles.barTitle}>{t("notifications.title")}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
@@ -317,6 +324,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.line,
   },
+  backGroup: { flexDirection: "row", alignItems: "center", gap: 10 },
   barTitle: { fontFamily: fonts.sans, fontSize: 14, fontWeight: "600", color: colors.ink },
   body: { padding: 18, paddingBottom: 40, gap: 10 },
   scope: { fontFamily: fonts.sans, fontSize: 13, lineHeight: 19, color: colors.inkMuted },

@@ -34,10 +34,17 @@ export function SharingScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
       <View style={styles.bar}>
-        <Pressable onPress={() => router.back()} hitSlop={12} accessibilityRole="button">
+        {/* The title is inside the button, not beside it: going back is what the whole
+            group means, and a 20px chevron is a small thing to ask a thumb to find. */}
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={12}
+          accessibilityRole="button"
+          style={styles.backGroup}
+        >
           <ChevronLeft size={20} color={colors.ink} strokeWidth={1.75} />
+          <Text style={styles.barTitle}>{t("sharing.title")}</Text>
         </Pressable>
-        <Text style={styles.barTitle}>{t("sharing.title")}</Text>
       </View>
 
       {settings === undefined ? (
@@ -302,6 +309,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
+  backGroup: { flexDirection: "row", alignItems: "center", gap: 10 },
   barTitle: { fontFamily: fonts.sans, fontSize: 15, fontWeight: "600", color: colors.ink },
   centred: { flex: 1, alignItems: "center", justifyContent: "center" },
   body: { paddingHorizontal: 20, paddingBottom: 40, gap: 4 },
