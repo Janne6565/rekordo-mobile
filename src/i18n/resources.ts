@@ -392,7 +392,7 @@ const enCommon = {
     scan: "Scan a barcode",
     scanHint: "Point the camera at the barcode on the sleeve or case.",
     hint: "Search by artist and title, or scan the barcode.",
-    searching: "Searching MusicBrainz…",
+    searching: "Searching…",
     failed: "Could not reach the release database. Try again in a moment.",
     noResults: "Nothing found for that search.",
     releaseCount: "Releases · {{count}}",
@@ -417,7 +417,7 @@ const enCommon = {
     enterManually: "Enter it manually",
     manualBody: "Bootlegs, test presses, tapes: anything no database has.",
     onWishlist: "On your wishlist",
-    checkedSources: "Checked MusicBrainz",
+    checkedSources: "Checked the release databases",
     rescan: "Rescan",
     searchByTitle: "Search by title instead",
     barcodeMissing: {
@@ -1115,7 +1115,7 @@ const enCommon = {
     secondCopy: "second copy",
     noRelease: {
       title: "No release with that barcode",
-      body: "Checked Discogs and MusicBrainz. Common with promos, club editions and anything pressed before the mid-eighties.",
+      body: "Checked the release databases. Common with promos, club editions and anything pressed before the mid-eighties.",
     },
     searchTitle: "Search title",
     notYetIdentified: "Scanned · not yet identified",
@@ -1567,7 +1567,7 @@ const deCommon: CommonSchema = {
     scan: "Barcode scannen",
     scanHint: "Richte die Kamera auf den Barcode auf der Hülle.",
     hint: "Nach Künstler und Titel suchen oder den Barcode scannen.",
-    searching: "Suche bei MusicBrainz…",
+    searching: "Suche…",
     failed: "Die Datenbank ist gerade nicht erreichbar. Versuche es gleich noch einmal.",
     noResults: "Nichts zu dieser Suche gefunden.",
     releaseCount: "Veröffentlichungen · {{count}}",
@@ -1593,7 +1593,7 @@ const deCommon: CommonSchema = {
     enterManually: "Manuell eingeben",
     manualBody: "Bootlegs, Testpressungen, Kassetten: alles, was in keiner Datenbank steht.",
     onWishlist: "Auf deiner Wunschliste",
-    checkedSources: "Bei MusicBrainz gesucht",
+    checkedSources: "Datenbanken durchsucht",
     rescan: "Erneut scannen",
     searchByTitle: "Stattdessen nach Titel suchen",
     barcodeMissing: {
@@ -2301,7 +2301,7 @@ const deCommon: CommonSchema = {
     secondCopy: "zweites Exemplar",
     noRelease: {
       title: "Keine Veröffentlichung mit diesem Barcode",
-      body: "Discogs und MusicBrainz geprüft. Häufig bei Promos, Clubauflagen und allem vor Mitte der Achtziger.",
+      body: "Die Datenbanken wurden geprüft. Häufig bei Promos, Clubauflagen und allem vor Mitte der Achtziger.",
     },
     searchTitle: "Nach Titel suchen",
     notYetIdentified: "Gescannt · noch nicht bestimmt",
