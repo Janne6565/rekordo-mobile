@@ -5,7 +5,7 @@ import { type AddDestination, useAddSheetLogic } from "@/features/add/useAddShee
 import { colors, fonts } from "@/theme/colors";
 import type { Format, Release } from "@janne6565/rekordo-shared";
 import { FORMAT_LABELS } from "@janne6565/rekordo-shared";
-import { Check, ChevronRight, Disc3, Heart, LibraryBig } from "lucide-react-native";
+import { Check, ChevronRight, Heart, LibraryBig } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -96,22 +96,22 @@ export function AddSheet({
             </>
           ) : (
             <>
-              <View style={styles.eyebrow}>
-                {!chosen ? (
-                  <Disc3 size={13} color={colors.inkSubtle} strokeWidth={2} />
-                ) : shelf ? (
-                  <LibraryBig size={13} color={colors.inkSubtle} strokeWidth={2} />
-                ) : (
-                  <Heart size={13} color={colors.inkSubtle} strokeWidth={2} />
-                )}
-                <Text style={styles.eyebrowText}>
-                  {!chosen
-                    ? t("addSheet.addThisRecord")
-                    : shelf
-                      ? t("addSheet.toYourShelf")
-                      : t("addSheet.toYourWishlist")}
-                </Text>
-              </View>
+              {/* Only where a destination was actually pressed. "To your shelf" reads a
+                  decision back; with nothing chosen the line said "Add this record" over a
+                  sheet whose own button already says so, which is a heading that only
+                  takes up the space above the sleeve. */}
+              {chosen && (
+                <View style={styles.eyebrow}>
+                  {shelf ? (
+                    <LibraryBig size={13} color={colors.inkSubtle} strokeWidth={2} />
+                  ) : (
+                    <Heart size={13} color={colors.inkSubtle} strokeWidth={2} />
+                  )}
+                  <Text style={styles.eyebrowText}>
+                    {shelf ? t("addSheet.toYourShelf") : t("addSheet.toYourWishlist")}
+                  </Text>
+                </View>
+              )}
 
               <View style={styles.head}>
                 <ReleaseArt release={logic.picked} format={logic.format} style={styles.art} />

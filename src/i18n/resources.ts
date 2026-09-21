@@ -1047,7 +1047,6 @@ const enCommon = {
   },
   addSheet: {
     toYourShelf: "To your shelf",
-    addThisRecord: "Add this record",
     toYourWishlist: "To your wishlist",
     pressing: "Pressing",
     format: "Format",
@@ -2235,7 +2234,6 @@ const deCommon: CommonSchema = {
   },
   addSheet: {
     toYourShelf: "Ins Regal",
-    addThisRecord: "Diese Platte hinzufügen",
     toYourWishlist: "Auf die Wunschliste",
     pressing: "Pressung",
     format: "Format",
