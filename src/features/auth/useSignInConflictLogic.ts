@@ -131,8 +131,15 @@ export function useSignInConflictLogic() {
     return "CONFLICT";
   }, [comparison.data?.outcome, comparison.isError, comparison.isPending, view]);
 
-  /** An empty account poses no question, so the upload starts without being asked for. */
-  const idle = !resolve.isPending && !resolve.isSuccess;
+  /**
+   * An empty account poses no question, so the upload starts without being asked for.
+   *
+   * Once, from `idle` only. It used to fire whenever the mutation was neither pending nor
+   * done, which includes *failed*: a failed upload restarted itself on the next render, so
+   * the sheet sat on the progress bar forever and the retry button never stayed up long
+   * enough to press. After a failure, starting again is the person's call.
+   */
+  const idle = resolve.isIdle;
   useEffect(() => {
     if (current === "UPLOADING" && idle) keepBoth();
   }, [current, idle, keepBoth]);

@@ -144,12 +144,14 @@ export function AddScreen({
               accessibilityLabel={t("add.clearSearch")}
               onPress={() => logic.setTerm("")}
               style={styles.clear}
+              // 18pt drawn, 44pt to hit.
+              hitSlop={13}
             >
               <X size={12} color="#ffffff" strokeWidth={1.75} />
             </Pressable>
           ) : null}
         </View>
-        <Pressable accessibilityRole="button" onPress={() => router.back()}>
+        <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={CANCEL_SLOP}>
           <Text style={styles.cancel}>{t("common.cancel")}</Text>
         </Pressable>
       </View>
@@ -284,7 +286,11 @@ function Body({
             {/* The deck puts the way into manual entry here, beside the releases it is an
                 alternative to: the moment you can see the archive's answer is not the one
                 you are holding is the moment you want to type it in yourself. */}
-            <Pressable accessibilityRole="button" onPress={() => router.push("/manual")}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push("/manual")}
+              hitSlop={LINK_SLOP}
+            >
               <Text style={styles.sectionAction}>{t("add.manualCard.title")}</Text>
             </Pressable>
           </View>
@@ -440,7 +446,7 @@ function BeforeTyping({
         <>
           <View style={styles.sectionRow}>
             <Text style={styles.section}>{t("addDialog.recent")}</Text>
-            <Pressable accessibilityRole="button" onPress={logic.clearRecent}>
+            <Pressable accessibilityRole="button" onPress={logic.clearRecent} hitSlop={LINK_SLOP}>
               <Text style={styles.sectionAction}>{t("addDialog.clearRecent")}</Text>
             </Pressable>
           </View>
@@ -566,7 +572,7 @@ function BarcodeNotFound({
           <Text style={styles.scannedCode}>{logic.submittedTerm}</Text>
           <Text style={styles.scannedSource}>{t("add.checkedSources")}</Text>
         </View>
-        <Pressable accessibilityRole="button" onPress={onScan}>
+        <Pressable accessibilityRole="button" onPress={onScan} hitSlop={LINK_SLOP}>
           <Text style={styles.rescan}>{t("add.rescan")}</Text>
         </Pressable>
       </View>
@@ -826,6 +832,15 @@ function ResultRow({
     </View>
   );
 }
+
+/*
+ * The text buttons on this screen are drawn as small as the deck sets them — a 13.5pt
+ * "Cancel", 11.5pt section links — and were exactly that size to hit. The slop takes each
+ * to at least 44pt tall without moving a pixel. Cancel's left side stays under the 12pt gap
+ * to the field, or it would steal taps meant for the end of the search box.
+ */
+const CANCEL_SLOP = { top: 14, bottom: 14, left: 10, right: 18 } as const;
+const LINK_SLOP = { top: 16, bottom: 16, left: 12, right: 12 } as const;
 
 const HAIRLINE = "rgba(25,23,19,0.08)";
 const MONO = "ui-monospace";
