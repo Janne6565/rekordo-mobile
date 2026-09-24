@@ -8,10 +8,17 @@ import {
 } from "@/local/settings";
 import { useAppSelector } from "@/store/hooks";
 import { createSyncEngine } from "@/sync/transport";
+import { useSyncLoop } from "@janne6565/rekordo-shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, createContext, useCallback, useContext, useEffect, useRef } from "react";
+import { AppState } from "react-native";
 
-/** A minute between passes: often enough to feel live, rare enough to spare the battery. */
+/**
+ * A minute between passes: often enough to feel live, rare enough to spare the battery.
+ *
+ * The fallback, not the path an edit takes: a local write is pushed a moment after it lands
+ * (see `useSyncLoop`). This is what brings in changes made on other devices.
+ */
 const SYNC_INTERVAL_MS = 60_000;
 
 interface SyncControls {
@@ -40,11 +47,10 @@ const SyncContext = createContext<SyncControls | null>(null);
  * on cannot hang off whichever screen happens to be on top.
  */
 export function SyncProvider({ children }: { readonly children: ReactNode }) {
-  const { store, clock } = useStore();
+  const { store, clock, localWrites } = useStore();
   const queryClient = useQueryClient();
   const user = useAppSelector((state) => state.auth.user);
   const firstSyncPending = useAppSelector((state) => state.auth.firstSyncPending);
-  const running = useRef(false);
 
   const runSync = useCallback(async () => {
     /*
@@ -61,16 +67,14 @@ export function SyncProvider({ children }: { readonly children: ReactNode }) {
         console.log("[rekordo] sync skipped — the sign-in conflict has not been answered yet");
       return;
     }
-    // A slow sync must not stack up behind itself on a flaky connection, and a pull-to-
-    // refresh landing mid-tick must not start a second one.
-    if (running.current) return;
+    // Overlap is the loop's to prevent: a pull-to-refresh landing mid-pass waits for one
+    // more pass after it rather than starting a second alongside.
     // Read every time rather than once: the account screen can switch this off while the
     // interval is already running, and it should take effect on the next pass.
     if (!(await readSyncEnabled(store))) {
       if (__DEV__) console.log("[rekordo] sync skipped — switched off on this device");
       return;
     }
-    running.current = true;
     try {
       // Before anything else: a cursor counted against a different server is worse than no
       // cursor, because the server answers "nothing new" and means it.
@@ -101,19 +105,35 @@ export function SyncProvider({ children }: { readonly children: ReactNode }) {
       // next pass picks them up; nothing is lost — but a developer staring at a list that
       // will not move deserves to be told which of those it is.
       if (__DEV__) console.log("[rekordo] sync failed —", error);
-    } finally {
-      running.current = false;
     }
   }, [user, firstSyncPending, store, clock, queryClient]);
 
-  useEffect(() => {
-    if (user === null || firstSyncPending) return;
-    void runSync();
-    const timer = setInterval(() => void runSync(), SYNC_INTERVAL_MS);
-    return () => clearInterval(timer);
-  }, [user, firstSyncPending, runSync]);
+  // A pass on start, one a moment after every local edit, and the interval as the fallback.
+  const active = user !== null && !firstSyncPending;
+  const { syncNow, flush } = useSyncLoop({
+    active,
+    run: runSync,
+    localWrites,
+    intervalMs: SYNC_INTERVAL_MS,
+  });
 
-  return <SyncContext.Provider value={{ syncNow: runSync }}>{children}</SyncContext.Provider>;
+  const appState = useRef(AppState.currentState);
+  useEffect(() => {
+    if (!active) return;
+    const subscription = AppState.addEventListener("change", (next) => {
+      const previous = appState.current;
+      appState.current = next;
+      // Back from the background: the interval did not tick while the app was away, and
+      // whatever changed on other devices meanwhile should be here before anyone looks.
+      if (next === "active" && previous !== "active") void syncNow();
+      // On the way out: timers stop in the background, so an edit made just before the
+      // switch would otherwise wait for the app to come back before it was pushed.
+      if (next === "background") void flush();
+    });
+    return () => subscription.remove();
+  }, [active, syncNow, flush]);
+
+  return <SyncContext.Provider value={{ syncNow }}>{children}</SyncContext.Provider>;
 }
 
 /** No-ops without a provider, so a screen rendered in isolation still works. */
