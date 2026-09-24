@@ -157,7 +157,7 @@ export function FriendsScreen() {
                 <ActivityIndicator size="small" color={colors.inkSubtle} />
               </Animated.View>
             </View>
-            <Pressable accessibilityRole="button" onPress={close} hitSlop={8}>
+            <Pressable accessibilityRole="button" onPress={close} hitSlop={CANCEL_SLOP}>
               <Text style={styles.cancel}>{t("common.cancel")}</Text>
             </Pressable>
           </View>
@@ -754,3 +754,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ink,
   },
 });
+
+/**
+ * The people search's Cancel is 13.5pt text, about 33pt tall with the old slop of 8, under
+ * the 44pt a thumb needs. Grown to the side away from the field, so it cannot steal a tap
+ * meant for the input -- the same shape as the add screen's Cancel.
+ */
+const CANCEL_SLOP = { top: 14, bottom: 14, left: 10, right: 18 } as const;
