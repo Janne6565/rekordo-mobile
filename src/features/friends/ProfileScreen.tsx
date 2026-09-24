@@ -130,6 +130,7 @@ export function ProfileScreen() {
               <Tab
                 active={tab === "collection"}
                 count={person.copyCount}
+                locked={person.canSeeCollection === false}
                 onPress={() => setTab("collection")}
               >
                 {t("friendProfile.tab.collection")}
@@ -137,6 +138,7 @@ export function ProfileScreen() {
               <Tab
                 active={tab === "wishlist"}
                 count={person.wishlistCount}
+                locked={person.canSeeWishlist === false}
                 onPress={() => setTab("wishlist")}
               >
                 {t("friendProfile.tab.wishlist")}
@@ -185,21 +187,29 @@ type Logic = ReturnType<typeof useFriendProfileLogic>;
 function Tab({
   active,
   count,
+  locked,
   onPress,
   children,
 }: {
   readonly active: boolean;
   /** Withheld for a shelf this viewer may not see — the count is itself about a collection. */
   readonly count?: number;
+  /**
+   * A list this viewer may not read: the half cannot be picked, since all it would open is
+   * the locked shelf. The half on screen keeps its raised look even so, because the shelf
+   * under it already says why and a switch with no position would read as broken.
+   */
+  readonly locked: boolean;
   readonly onPress: () => void;
   readonly children: string;
 }) {
   return (
     <Pressable
       accessibilityRole="tab"
-      accessibilityState={{ selected: active }}
+      accessibilityState={{ selected: active, disabled: locked }}
+      disabled={locked}
       onPress={onPress}
-      style={[styles.tab, active && styles.tabActive]}
+      style={[styles.tab, active && styles.tabActive, locked && !active && styles.tabOff]}
     >
       <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{children}</Text>
       {count === undefined ? null : <Text style={styles.tabCount}>{count}</Text>}
@@ -541,6 +551,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
+  tabOff: { opacity: 0.5 },
   tabLabel: { fontFamily: fonts.sans, fontSize: 12.5, color: colors.inkMuted },
   tabLabelActive: { color: colors.ink, fontWeight: "600" },
   tabCount: { fontFamily: "Menlo", fontSize: 11, color: colors.inkSubtle },
