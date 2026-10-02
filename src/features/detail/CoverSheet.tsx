@@ -41,6 +41,7 @@ export function CoverSheet({
   onClose,
   fade,
   handlers,
+  back,
   action,
   footer,
   parked = false,
@@ -53,6 +54,14 @@ export function CoverSheet({
   readonly fade?: Animated.Value;
   /** A pan responder's handlers, when the caller has neighbours to move between. */
   readonly handlers?: GestureResponderHandlers;
+  /**
+   * The way out, when the X is not the right word for it.
+   *
+   * A copy opened from the scanner is left by going back to scanning, and a bare X there
+   * reads as closing the whole session. The caller supplies the control; it sits where the
+   * X sits and stays out of the scroll for the same reason.
+   */
+  readonly back?: ReactNode;
   /**
    * What sits opposite the way out, on the sleeve itself.
    *
@@ -201,14 +210,16 @@ export function CoverSheet({
           away is one you have to go looking for. What sits opposite it is there for the
           same reason. */}
       <SafeAreaView style={styles.backWrap} edges={["top"]} pointerEvents="box-none">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t("detail.back")}
-          onPress={onClose}
-          style={[styles.back, { backgroundColor: chrome.surface }]}
-        >
-          <X size={18} color={chrome.ink} strokeWidth={1.75} />
-        </Pressable>
+        {back ?? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("detail.back")}
+            onPress={onClose}
+            style={[styles.back, { backgroundColor: chrome.surface }]}
+          >
+            <X size={18} color={chrome.ink} strokeWidth={1.75} />
+          </Pressable>
+        )}
         {action}
       </SafeAreaView>
     </Animated.View>

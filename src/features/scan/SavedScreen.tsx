@@ -2,7 +2,7 @@ import { ReleaseArt } from "@/components/ReleaseArt";
 import { useSaveBatch } from "@/features/scan/useSaveBatch";
 import { useStore } from "@/local/StoreProvider";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { scanActions } from "@/store/scanSlice";
+import { type KeptScan, scanActions } from "@/store/scanSlice";
 import { colors, fonts } from "@/theme/colors";
 import type { Copy, Release, WishlistItem } from "@janne6565/rekordo-shared";
 import {
@@ -11,6 +11,8 @@ import {
   catalogueKeysOf,
   copyFormat,
   formatBarcode,
+  isManualCopy,
+  isManualReleaseId,
 } from "@janne6565/rekordo-shared";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
@@ -244,26 +246,60 @@ function wishMeta(wish: WishlistItem): string {
  * A restored row is the same decision it was — the record, the format, the destination —
  * and rebuilding it from the store rather than from a remembered tray is what makes Undo
  * safe to press after the app has been backgrounded and the slice thrown away.
+ *
+ * A record typed in by hand goes back as what was typed, not as a release: the release the
+ * store answers with for it is the copy describing itself, under an id that dies with the
+ * copy. Its cover does not come back — the photo went with the copy it was attached to.
  */
 function restorable(
   copies: readonly Copy[],
   wishes: readonly WishlistItem[],
   releases: ReadonlyMap<string, Release> | undefined,
-) {
+): KeptScan[] {
   return [
-    ...copies.map((copy) => ({
-      key: copy.id,
-      barcode: copy.pendingBarcode ?? "",
-      release: releases?.get(catalogueKeyOf(copy) ?? "") ?? null,
-      format: copy.manualFormat,
-      destination: "SHELF" as const,
-      secondCopy: false,
-      keptAt: copy.createdAt,
-    })),
+    ...copies.map((copy) => {
+      const typed = copy.pendingBarcode === null && isManualCopy(copy);
+      return {
+        key: copy.id,
+        barcode: copy.pendingBarcode ?? "",
+        release: typed ? null : (releases?.get(catalogueKeyOf(copy) ?? "") ?? null),
+        manual: typed
+          ? {
+              fields: {
+                manualTitle: copy.manualTitle,
+                manualArtist: copy.manualArtist,
+                manualYear: copy.manualYear,
+                manualLabel: copy.manualLabel,
+                manualCatalogNumber: copy.manualCatalogNumber,
+                manualFormat: copy.manualFormat,
+              },
+              cover: null,
+            }
+          : null,
+        format: copy.manualFormat,
+        destination: "SHELF" as const,
+        secondCopy: false,
+        keptAt: copy.createdAt,
+      };
+    }),
     ...wishes.map((wish) => ({
       key: wish.id,
       barcode: wish.pendingBarcode ?? "",
       release: null,
+      manual:
+        wish.pendingBarcode === null && isManualReleaseId(wish.albumId)
+          ? {
+              fields: {
+                manualTitle: wish.title,
+                manualArtist: wish.artistName,
+                manualYear: wish.year,
+                manualLabel: null,
+                manualCatalogNumber: null,
+                manualFormat: wish.desiredFormat,
+              },
+              cover: null,
+            }
+          : null,
       format: wish.desiredFormat,
       destination: "WISHLIST" as const,
       secondCopy: false,

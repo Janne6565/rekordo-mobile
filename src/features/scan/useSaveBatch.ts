@@ -1,3 +1,4 @@
+import { storePhotoBytes } from "@/features/photos/pickImage";
 import { useSatisfyWishes } from "@/features/wishlist/useSatisfyWishes";
 import { useStore } from "@/local/StoreProvider";
 import { readDefaultCurrency } from "@/local/settings";
@@ -8,8 +9,11 @@ import type { Copy, WishlistItem } from "@janne6565/rekordo-shared";
 import {
   asWishFormat,
   createCopy,
+  createManualCopy,
+  createPhoto,
   createScannedCopy,
   createWishlistItem,
+  manualReleaseId,
   tombstoneCopy,
   tombstoneWishlistItem,
 } from "@janne6565/rekordo-shared";
@@ -43,6 +47,7 @@ export function useSaveBatch() {
   const refresh = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ["copies"] });
     await queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+    await queryClient.invalidateQueries({ queryKey: ["wish-photos"] });
     await queryClient.invalidateQueries({ queryKey: ["stats"] });
   }, [queryClient]);
 
@@ -60,6 +65,29 @@ export function useSaveBatch() {
         .filter((release): release is NonNullable<typeof release> => release !== null);
       if (releases.length > 0) await store.cacheReleases(releases);
 
+      /**
+       * The cover picked on the manual form, as the first photo of what it became.
+       *
+       * Bytes first: a photo record with no bytes renders as a permanent placeholder.
+       */
+      const attachCover = async (
+        scan: KeptScan,
+        owner: { copyId: string } | { wishId: string },
+      ) => {
+        const cover = scan.manual?.cover ?? null;
+        if (cover === null) return;
+        const photoId = Crypto.randomUUID();
+        await storePhotoBytes(store, photoId, cover.uri);
+        await store.putPhoto(
+          createPhoto(
+            { ...owner, contentType: cover.contentType, byteSize: cover.byteSize, sortIndex: 0 },
+            clock,
+            now,
+            photoId,
+          ),
+        );
+      };
+
       for (const scan of kept) {
         if (scan.destination === "SHELF") {
           const copy = shelfCopy(scan, currency, clock, now);
@@ -67,6 +95,7 @@ export function useSaveBatch() {
           copyIds.push(copy.id);
           // One record, added by a person: the only origin that reaches anybody's feed.
           await store.rememberOrigins([copy.id], "MANUAL");
+          await attachCover(scan, { copyId: copy.id });
           // The entry leaves the wishlist when the record arrives, whichever way in was
           // used. A scan that could not be identified settles nothing yet — there is no
           // release to compare against — and settles it when the resolver names it.
@@ -75,6 +104,7 @@ export function useSaveBatch() {
           const wish = wishEntry(scan, clock, now);
           await store.putWishlistItem(wish);
           wishIds.push(wish.id);
+          await attachCover(scan, { wishId: wish.id });
         }
       }
 
@@ -143,6 +173,18 @@ function shelfCopy(
 ): Copy {
   const id = Crypto.randomUUID();
   const draft = emptyDraft(currency);
+  const manual = scan.manual ?? null;
+  if (manual !== null) {
+    // The format chips in Review stay live for a typed record too, so the tray's format
+    // is the one that is written rather than the one the form was left on.
+    return createManualCopy(
+      { ...manual.fields, manualFormat: scan.format ?? manual.fields.manualFormat },
+      draft,
+      clock,
+      now,
+      id,
+    );
+  }
   if (scan.release === null) {
     return createScannedCopy(scan.barcode, scan.format, draft, clock, now, id);
   }
@@ -160,6 +202,25 @@ function wishEntry(
   now: number,
 ): WishlistItem {
   const id = Crypto.randomUUID();
+  const manual = scan.manual ?? null;
+  if (manual !== null) {
+    // A wish for a record no catalogue has: its own album, the way a hand-typed copy is
+    // its own release, and no pressing to point at.
+    return createWishlistItem(
+      {
+        albumId: manualReleaseId(id),
+        releaseId: null,
+        title: manual.fields.manualTitle ?? "",
+        artistName: manual.fields.manualArtist ?? "",
+        year: manual.fields.manualYear,
+        desiredFormat: asWishFormat(scan.format ?? manual.fields.manualFormat),
+        note: null,
+      },
+      clock,
+      now,
+      id,
+    );
+  }
   if (scan.release === null) {
     // Nothing to name it with yet. Empty strings rather than a placeholder title: the row
     // draws itself from the barcode, and "Unknown" would be a claim nobody made.

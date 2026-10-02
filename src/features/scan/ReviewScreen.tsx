@@ -4,7 +4,7 @@ import { useSaveBatch } from "@/features/scan/useSaveBatch";
 import { SCAN_FORMATS, scanFormat } from "@/features/scan/useScannerLogic";
 import { useStore } from "@/local/StoreProvider";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { type KeptScan, countByDestination, scanActions } from "@/store/scanSlice";
+import { type KeptScan, countByDestination, scanActions, scanNaming } from "@/store/scanSlice";
 import { colors, fonts } from "@/theme/colors";
 import type { Format } from "@janne6565/rekordo-shared";
 import { FORMAT_LABELS, formatBarcode, wishSatisfiedBy } from "@janne6565/rekordo-shared";
@@ -40,7 +40,9 @@ export function ReviewScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" onPress={() => router.back()}>
+        {/* To the camera by name rather than one step back: Review is also reachable from
+            the title search, and the label promises the camera from there too. */}
+        <Pressable accessibilityRole="button" onPress={() => router.dismissTo("/scan")}>
           <Text style={styles.back}>{t("scan.backToCamera")}</Text>
         </Pressable>
         <Text style={styles.headerCount}>{t("scan.review", { count: kept.length })}</Text>
@@ -82,6 +84,8 @@ function ReviewRow({ scan }: { readonly scan: KeptScan }) {
   const dispatch = useAppDispatch();
   const { store } = useStore();
   const wished = scan.destination === "WISHLIST";
+  /** Null only for a scan nobody could look up; a hand-typed record has a name too. */
+  const naming = scanNaming(scan);
 
   /**
    * Whether filing this one settles something already on the wishlist.
@@ -101,16 +105,21 @@ function ReviewRow({ scan }: { readonly scan: KeptScan }) {
   return (
     <View style={[styles.row, wished && styles.rowWished]}>
       <View style={styles.rowTop}>
-        {scan.release === null ? (
+        {naming === null ? (
           <View style={styles.pending}>
             <Disc3 size={20} color="rgba(25,23,19,0.3)" strokeWidth={1.6} />
           </View>
         ) : (
-          <ReleaseArt release={scan.release} format={scanFormat(scan)} style={styles.art} />
+          <ReleaseArt
+            release={scan.release ?? undefined}
+            format={scanFormat(scan)}
+            previewUri={scan.manual?.cover?.uri ?? null}
+            style={styles.art}
+          />
         )}
 
         <View style={styles.rowText}>
-          {scan.release === null ? (
+          {naming === null ? (
             <>
               <Text style={styles.digits}>{formatBarcode(scan.barcode)}</Text>
               <Text style={styles.note}>{t("scan.pendingRow")}</Text>
@@ -118,16 +127,20 @@ function ReviewRow({ scan }: { readonly scan: KeptScan }) {
           ) : (
             <>
               <Text style={styles.rowTitle} numberOfLines={1}>
-                {scan.release.title}
+                {naming.title}
                 {scan.secondCopy && (
                   <Text style={styles.rowTitleQuiet}> · {t("scan.secondCopy")}</Text>
                 )}
               </Text>
               <Text style={styles.rowMeta} numberOfLines={1}>
                 {[
-                  scan.release.artistName,
-                  scan.release.year === null ? null : String(scan.release.year),
-                  releaseDisambiguation(scan.release),
+                  naming.artistName,
+                  naming.year === null ? null : String(naming.year),
+                  scan.release === null
+                    ? [scan.manual?.fields.manualLabel, scan.manual?.fields.manualCatalogNumber]
+                        .filter((part) => part != null)
+                        .join(" ")
+                    : releaseDisambiguation(scan.release),
                 ]
                   .filter((part) => part !== null && part !== "")
                   .join(" · ")}

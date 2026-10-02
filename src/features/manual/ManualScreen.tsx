@@ -5,7 +5,7 @@ import { colors } from "@/theme/colors";
 import type { Format } from "@janne6565/rekordo-shared";
 import { FORMAT_LABELS, formatBarcode } from "@janne6565/rekordo-shared";
 import { useRouter } from "expo-router";
-import { Camera, ImagePlus, LibraryBig, ScanBarcode, X } from "lucide-react-native";
+import { Camera, Heart, ImagePlus, LibraryBig, ScanBarcode, X } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -26,8 +26,19 @@ import { SafeAreaView } from "react-native-safe-area-context";
  * archive is usually one you know very little about, and a form that insisted on a
  * catalogue number would simply not get filled in. Saving lands on the copy with its
  * editor open, which is where the condition, the price and the shop belong.
+ *
+ * `inScan` is the same form reached from the camera (scan deck, screen 3b). There Save
+ * used to write the copy and replace the screen with its editor, which ended the session
+ * with a tray still full. So the form ends in the Wishlist and Shelf every card ends in,
+ * the record joins the tray, and the way out leads back to the camera.
  */
-export function ManualScreen({ barcode = "" }: { readonly barcode?: string } = {}) {
+export function ManualScreen({
+  barcode = "",
+  inScan = false,
+}: {
+  readonly barcode?: string;
+  readonly inScan?: boolean;
+} = {}) {
   const { t } = useTranslation();
   const router = useRouter();
   const logic = useManualEntryLogic();
@@ -40,19 +51,25 @@ export function ManualScreen({ barcode = "" }: { readonly barcode?: string } = {
             <Text style={styles.cancel}>{t("common.cancel")}</Text>
           </Pressable>
           <Text style={styles.heading}>{t("manual.heading")}</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ disabled: !logic.canSave || logic.saving }}
-            onPress={logic.save}
-            disabled={!logic.canSave || logic.saving}
-            hitSlop={10}
-          >
-            {logic.saving ? (
-              <ActivityIndicator size="small" color={colors.accent} />
-            ) : (
-              <Text style={logic.canSave ? styles.save : styles.saveOff}>{t("manual.save")}</Text>
-            )}
-          </Pressable>
+          {inScan ? (
+            // The two destinations at the foot are the save; this only keeps the heading
+            // centred against Cancel.
+            <View style={styles.headerSpacer} />
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !logic.canSave || logic.saving }}
+              onPress={logic.save}
+              disabled={!logic.canSave || logic.saving}
+              hitSlop={10}
+            >
+              {logic.saving ? (
+                <ActivityIndicator size="small" color={colors.accent} />
+              ) : (
+                <Text style={logic.canSave ? styles.save : styles.saveOff}>{t("manual.save")}</Text>
+              )}
+            </Pressable>
+          )}
         </View>
 
         <ScrollView
@@ -222,14 +239,48 @@ export function ManualScreen({ barcode = "" }: { readonly barcode?: string } = {
               opens the editor on the copy this creates. */}
           <View style={styles.laterRow}>
             <Text style={styles.laterLabel}>{t("manual.later")}</Text>
-            <Text style={styles.laterAction}>{t("manual.laterAction")}</Text>
+            <Text style={styles.laterAction}>
+              {inScan ? t("manual.afterSaving") : t("manual.laterAction")}
+            </Text>
           </View>
         </ScrollView>
 
-        <View style={styles.footer}>
-          <ScanBarcode size={17} color={colors.inkSubtle} strokeWidth={1.6} />
-          <Text style={styles.footerText}>{t("manual.nothingLookedUp")}</Text>
-        </View>
+        {inScan ? (
+          <View style={styles.scanFooter}>
+            <View style={styles.scanFooterNote}>
+              <ScanBarcode size={15} color={colors.inkSubtle} strokeWidth={1.6} />
+              <Text style={styles.footerText}>{t("manual.nothingLookedUp")}</Text>
+            </View>
+            {/* Wishlist left, Shelf right, as on every card. */}
+            <View style={styles.destinations}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !logic.canSave }}
+                disabled={!logic.canSave}
+                onPress={() => logic.keep("WISHLIST", barcode)}
+                style={[styles.destination, !logic.canSave && styles.destinationOff]}
+              >
+                <Heart size={17} color="#ffffff" strokeWidth={1.8} />
+                <Text style={styles.destinationText}>{t("scan.wishlist")}</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !logic.canSave }}
+                disabled={!logic.canSave}
+                onPress={() => logic.keep("SHELF", barcode)}
+                style={[styles.destination, !logic.canSave && styles.destinationOff]}
+              >
+                <LibraryBig size={17} color="#ffffff" strokeWidth={1.8} />
+                <Text style={styles.destinationText}>{t("scan.shelf")}</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.footer}>
+            <ScanBarcode size={17} color={colors.inkSubtle} strokeWidth={1.6} />
+            <Text style={styles.footerText}>{t("manual.nothingLookedUp")}</Text>
+          </View>
+        )}
       </KeyboardLift>
     </SafeAreaView>
   );
@@ -273,6 +324,7 @@ const styles = StyleSheet.create({
   heading: { fontSize: 14, fontWeight: "600", color: colors.ink },
   save: { fontSize: 13.5, fontWeight: "600", color: colors.accent },
   saveOff: { fontSize: 13.5, fontWeight: "600", color: "rgba(25,23,19,0.28)" },
+  headerSpacer: { width: 44 },
   body: { paddingHorizontal: 18, paddingBottom: 28 },
   topRow: { flexDirection: "row", gap: 14, alignItems: "flex-start" },
   coverWell: {
@@ -368,6 +420,33 @@ const styles = StyleSheet.create({
     borderTopColor: "rgba(25,23,19,0.08)",
   },
   footerText: { flex: 1, fontSize: 11.5, lineHeight: 16, color: colors.inkMuted },
+  scanFooter: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(25,23,19,0.08)",
+  },
+  scanFooterNote: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginHorizontal: 2,
+    marginBottom: 12,
+  },
+  destinations: { flexDirection: "row", gap: 10 },
+  destination: {
+    flex: 1,
+    height: 52,
+    borderRadius: 999,
+    backgroundColor: colors.ink,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  /** Two fields name a record; until both are there, there is nothing to file. */
+  destinationOff: { opacity: 0.35 },
+  destinationText: { fontSize: 14.5, fontWeight: "600", color: "#ffffff" },
 
   /**
    * 4b: the digits the scanner did read, kept at the top.
@@ -382,7 +461,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     padding: 10,
-    marginBottom: 4,
+    marginBottom: 16,
     borderRadius: 10,
     backgroundColor: "rgba(25,23,19,0.05)",
     borderWidth: 1,

@@ -6,6 +6,8 @@ import {
 } from "@/features/photos/pickImage";
 import { useStore } from "@/local/StoreProvider";
 import { readDefaultCurrency } from "@/local/settings";
+import { useAppDispatch } from "@/store/hooks";
+import { type ScanDestination, scanActions } from "@/store/scanSlice";
 import type { Format, ManualRelease } from "@janne6565/rekordo-shared";
 import {
   catalogueKeyOf,
@@ -48,6 +50,19 @@ function blankToNull(value: string): string | null {
   return value.trim() === "" ? null : value.trim();
 }
 
+/** The form as the pressing it describes: blanks are null, never empty strings. */
+function asManualRelease(fields: ManualFields): ManualRelease {
+  const year = Number.parseInt(fields.year.trim(), 10);
+  return {
+    manualTitle: blankToNull(fields.title),
+    manualArtist: blankToNull(fields.artist),
+    manualYear: Number.isNaN(year) ? null : year,
+    manualLabel: blankToNull(fields.label),
+    manualCatalogNumber: blankToNull(fields.catalogNumber),
+    manualFormat: fields.format,
+  };
+}
+
 /**
  * Screen 14a — the copy nobody has a record of.
  *
@@ -60,6 +75,7 @@ export function useManualEntryLogic() {
   const { store, clock } = useStore();
   const queryClient = useQueryClient();
   const router = useRouter();
+  const dispatch = useAppDispatch();
 
   const [fields, setFields] = useState<ManualFields>(EMPTY);
   /**
@@ -126,17 +142,8 @@ export function useManualEntryLogic() {
 
   const save = useMutation({
     mutationFn: async () => {
-      const year = Number.parseInt(fields.year.trim(), 10);
-      const manual: ManualRelease = {
-        manualTitle: blankToNull(fields.title),
-        manualArtist: blankToNull(fields.artist),
-        manualYear: Number.isNaN(year) ? null : year,
-        manualLabel: blankToNull(fields.label),
-        manualCatalogNumber: blankToNull(fields.catalogNumber),
-        manualFormat: fields.format,
-      };
       const copy = createManualCopy(
-        manual,
+        asManualRelease(fields),
         {
           condition: null,
           sleeveCondition: null,
@@ -200,5 +207,28 @@ export function useManualEntryLogic() {
     canSave: fields.artist.trim() !== "" && fields.title.trim() !== "",
     save: () => save.mutate(),
     saving: save.isPending,
+    /**
+     * The scan session's way of finishing the form: into the tray, and back to the camera.
+     *
+     * Nothing is written. The record waits with everything else kept this visit, where it
+     * can still be redirected or dropped, and is saved with the batch — which is also when
+     * its condition and price are asked for, alongside everybody else's. The camera says
+     * what landed and offers the Undo, as it does for a card.
+     */
+    keep: (destination: ScanDestination, barcode: string) => {
+      dispatch(
+        scanActions.kept({
+          key: Crypto.randomUUID(),
+          barcode,
+          release: null,
+          manual: { fields: asManualRelease(fields), cover },
+          format: fields.format,
+          destination,
+          secondCopy: false,
+          keptAt: Date.now(),
+        }),
+      );
+      router.back();
+    },
   };
 }

@@ -1,6 +1,6 @@
 import { ReleaseArt } from "@/components/ReleaseArt";
 import { scanFormat } from "@/features/scan/useScannerLogic";
-import type { KeptScan } from "@/store/scanSlice";
+import { type KeptScan, scanNaming } from "@/store/scanSlice";
 import { colors, fonts } from "@/theme/colors";
 import { FORMAT_LABELS, formatBarcode } from "@janne6565/rekordo-shared";
 import { Disc3, Heart } from "lucide-react-native";
@@ -23,16 +23,24 @@ export function TrayRow({
 }) {
   const { t } = useTranslation();
   const wished = scan.destination === "WISHLIST";
+  // A record typed in by hand has a name and no release, so the row asks for the name
+  // rather than for the release: only a scan nobody could look up is drawn as digits.
+  const naming = scanNaming(scan);
 
   return (
     <View style={[styles.row, last && styles.rowLast]}>
       <View style={styles.artBox}>
-        {scan.release === null ? (
+        {naming === null ? (
           <View style={styles.pending}>
             <Disc3 size={20} color="rgba(25,23,19,0.3)" strokeWidth={1.6} />
           </View>
         ) : (
-          <ReleaseArt release={scan.release} format={scanFormat(scan)} style={styles.art} />
+          <ReleaseArt
+            release={scan.release ?? undefined}
+            format={scanFormat(scan)}
+            previewUri={scan.manual?.cover?.uri ?? null}
+            style={styles.art}
+          />
         )}
         {wished && (
           <View style={styles.badge}>
@@ -42,7 +50,7 @@ export function TrayRow({
       </View>
 
       <View style={styles.text}>
-        {scan.release === null ? (
+        {naming === null ? (
           <>
             <Text style={styles.digits}>{formatBarcode(scan.barcode)}</Text>
             <Text style={styles.meta}>{t("scan.pendingRow")}</Text>
@@ -50,15 +58,15 @@ export function TrayRow({
         ) : (
           <>
             <Text style={styles.title} numberOfLines={1}>
-              {scan.release.title}
+              {naming.title}
             </Text>
             <Text style={styles.meta} numberOfLines={1}>
               {[
-                scan.release.artistName,
-                scan.release.year === null ? null : String(scan.release.year),
+                naming.artistName,
+                naming.year === null ? null : String(naming.year),
                 FORMAT_LABELS[scanFormat(scan)],
               ]
-                .filter((part) => part !== null)
+                .filter((part) => part !== null && part !== "")
                 .join(" · ")}
             </Text>
           </>

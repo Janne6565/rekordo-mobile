@@ -8,7 +8,7 @@ import { copyFormat, isBarcode, pickPressing } from "@janne6565/rekordo-shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCameraPermissions } from "expo-camera";
 import * as Crypto from "expo-crypto";
-import { useRouter } from "expo-router";
+import { useIsFocused, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
@@ -32,6 +32,12 @@ export interface ScanCard {
   readonly format: Format | null;
   /** The copy already on the shelf, for the duplicate card's date and grade. */
   readonly owned: Copy | null;
+  /**
+   * How the card came to be: read off a sleeve, or picked in the title search after the
+   * read came up empty. The question and its answers are the same either way; only the
+   * line that says where the pressings came from differs.
+   */
+  readonly source: "BARCODE" | "TITLE";
 }
 
 /**
@@ -53,8 +59,23 @@ const SAME_CODE_COOLDOWN_MS = 2500;
  */
 const ADVICE_AFTER_MS = 6000;
 
+/**
+ * How long the two notes stay up: what just landed, and what the next sleeve pushed aside.
+ *
+ * Both carry an Undo, so they have to outlast the moment of noticing the mistake and
+ * reaching for it — and no longer, because the next record is already in the other hand.
+ */
+const KEPT_NOTE_MS = 5000;
+const SKIPPED_NOTE_MS = 4000;
+
 /** The formats a confirm card offers. `OTHER` is a catalogue answer, never a choice. */
 export const SCAN_FORMATS = CHOOSABLE_FORMATS;
+
+/** A card as it stood when it left the screen, so an Undo can put it back whole. */
+interface ShelvedCard {
+  readonly card: ScanCard;
+  readonly siblings: readonly Release[] | null;
+}
 
 export function useScannerLogic() {
   const { store } = useStore();
@@ -62,6 +83,16 @@ export function useScannerLogic() {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
   const kept = useAppSelector((state) => state.scan.kept);
+  const justKeptKey = useAppSelector((state) => state.scan.justKept);
+  const found = useAppSelector((state) => state.scan.found);
+  const dismissals = useAppSelector((state) => state.scan.dismissals);
+  /**
+   * Whether the camera is the screen being looked at.
+   *
+   * The feed stays mounted under the review sheet, the search and the manual form, and a
+   * sleeve lying face-down on the counter would otherwise raise a card behind them.
+   */
+  const focused = useIsFocused();
 
   const [permission, requestPermission] = useCameraPermissions();
   const [torch, setTorch] = useState(false);
@@ -71,9 +102,24 @@ export function useScannerLogic() {
   /** Pressings of the matched release's album, for "1 pressing of 4" and "3 others". */
   const [siblings, setSiblings] = useState<readonly Release[] | null>(null);
   const [picking, setPicking] = useState(false);
+  /** The card the next sleeve replaced, while its "Skipped · Undo" is still in the feed. */
+  const [skipped, setSkipped] = useState<ShelvedCard | null>(null);
 
   /** Barcodes read recently, so one sleeve in frame is one question. */
   const recent = useRef(new Map<string, number>());
+  /**
+   * What is on screen, readable from a lookup that started before it was.
+   *
+   * A read is resolved over the network, and the card it will replace may have been
+   * answered in the meantime — so what gets replaced is decided when the answer lands,
+   * not when the question was asked.
+   */
+  const shown = useRef<ShelvedCard | null>(null);
+  shown.current = card === null ? null : { card, siblings };
+  /** Which lookup the card belongs to, so a slow answer for an old card lands nowhere. */
+  const turn = useRef(0);
+  /** The card the last keep answered, so its Undo reopens the question rather than losing it. */
+  const lastKept = useRef<(ShelvedCard & { readonly key: string }) | null>(null);
 
   /**
    * The advice timer, restarted whenever the scanner starts looking again.
@@ -92,20 +138,95 @@ export function useScannerLogic() {
     return () => clearTimeout(timer);
   }, [card]);
 
+  useEffect(() => {
+    if (skipped === null) return;
+    const timer = setTimeout(() => setSkipped(null), SKIPPED_NOTE_MS);
+    return () => clearTimeout(timer);
+  }, [skipped]);
+
+  const dismiss = useCallback(() => {
+    setCard(null);
+    setSiblings(null);
+    setPicking(false);
+  }, []);
+
+  /**
+   * The note under the tray, and the card behind a keep made somewhere else.
+   *
+   * The manual form and the copy opened from a duplicate both file into the tray from
+   * their own screens. Either one is an answer to whatever card was open when they were
+   * reached, so the card goes — coming back to a question already answered would read as
+   * the keep having failed.
+   */
+  useEffect(() => {
+    if (justKeptKey === null) return;
+    if (lastKept.current?.key !== justKeptKey) dismiss();
+    const timer = setTimeout(() => dispatch(scanActions.noteExpired()), KEPT_NOTE_MS);
+    return () => clearTimeout(timer);
+  }, [justKeptKey, dismiss, dispatch]);
+
+  /** "Back to camera" on the copy a duplicate opened: the question was answered with no. */
+  const seenDismissals = useRef(dismissals);
+  useEffect(() => {
+    if (dismissals === seenDismissals.current) return;
+    seenDismissals.current = dismissals;
+    dismiss();
+  }, [dismissals, dismiss]);
+
+  /**
+   * An album picked in the title search, raised as the card a scan would have raised.
+   *
+   * No duplicate check here: the pressings are every edition of the album, and owning one
+   * of them says nothing about the one in hand until a pressing has been picked.
+   */
+  useEffect(() => {
+    if (found === null) return;
+    dispatch(scanActions.foundRaised());
+    const picked = pickPressing(found.pressings, null) ?? found.pressings[0];
+    if (picked === undefined) return;
+    turn.current += 1;
+    setSiblings(null);
+    setPicking(false);
+    setCard({
+      kind: found.pressings.length > 1 ? "PRESSINGS" : "MATCH",
+      barcode: found.barcode,
+      candidates: found.pressings,
+      picked,
+      format: picked.format === "OTHER" ? null : picked.format,
+      owned: null,
+      source: "TITLE",
+    });
+  }, [found, dispatch]);
+
   const resolve = useCallback(
     async (barcode: string) => {
       setLooking(true);
-      setSiblings(null);
+      const mine = ++turn.current;
+      /**
+       * Puts the answer on screen, over whatever is there by now.
+       *
+       * A card still open at this point was not answered, and the sleeve now in frame is
+       * the answer to why: it was skipped. Said in the feed with an Undo, because pointing
+       * the phone at the next record is not always a decision about the last one.
+       */
+      const show = (next: ScanCard) => {
+        if (mine !== turn.current) return;
+        if (shown.current !== null) setSkipped(shown.current);
+        setSiblings(null);
+        setPicking(false);
+        setCard(next);
+      };
       try {
         const candidates = await lookupByBarcode(barcode);
         if (candidates.length === 0) {
-          setCard({
+          show({
             kind: "MISSING",
             barcode,
             candidates,
             picked: null,
             format: null,
             owned: null,
+            source: "BARCODE",
           });
           return;
         }
@@ -116,25 +237,29 @@ export function useScannerLogic() {
         // cannot name different pressings for the same read.
         const picked = pickPressing(candidates, null) ?? candidates[0];
         const owned = await ownedCopy(store, candidates);
-        setCard({
+        show({
           kind: owned !== null ? "DUPLICATE" : candidates.length > 1 ? "PRESSINGS" : "MATCH",
           barcode,
           candidates,
           picked,
           format: picked.format === "OTHER" ? null : picked.format,
           owned,
+          source: "BARCODE",
         });
-        void warmSiblings(picked, setSiblings);
+        void warmSiblings(picked, (pressings) => {
+          if (mine === turn.current) setSiblings(pressings);
+        });
       } catch {
         // Not an error to report: the camera worked, nobody could be asked. The scan keeps
         // its digits and names itself when a connection returns.
-        setCard({
+        show({
           kind: "OFFLINE",
           barcode,
           candidates: [],
           picked: null,
           format: null,
           owned: null,
+          source: "BARCODE",
         });
       } finally {
         setLooking(false);
@@ -145,26 +270,29 @@ export function useScannerLogic() {
 
   const handleScan = useCallback(
     (raw: string) => {
+      if (!focused) return;
       const barcode = raw.trim();
       if (!isBarcode(barcode)) return;
-      // While a card is up, the question on screen has not been answered yet.
-      if (card !== null || looking) return;
+      if (looking) return;
 
       const now = Date.now();
+      // The sleeve the card is about, still in frame. Not a new question — and its clock
+      // is kept running, so answering the card does not re-raise it a moment later from
+      // a read that never stopped.
+      if (card !== null && card.barcode === barcode) {
+        recent.current.set(barcode, now);
+        return;
+      }
       const last = recent.current.get(barcode);
       if (last !== undefined && now - last < SAME_CODE_COOLDOWN_MS) return;
       recent.current.set(barcode, now);
 
+      // A different sleeve while a card is up is the other way to skip: the card it
+      // raises replaces the open one.
       void resolve(barcode);
     },
-    [card, looking, resolve],
+    [focused, card, looking, resolve],
   );
-
-  const dismiss = useCallback(() => {
-    setCard(null);
-    setSiblings(null);
-    setPicking(false);
-  }, []);
 
   const keep = useCallback(
     (destination: ScanDestination) => {
@@ -178,11 +306,21 @@ export function useScannerLogic() {
         secondCopy: card.kind === "DUPLICATE",
         keptAt: Date.now(),
       };
+      lastKept.current = { key: scan.key, card, siblings };
+      recent.current.set(card.barcode, Date.now());
       dispatch(scanActions.kept(scan));
       dismiss();
     },
-    [card, dispatch, dismiss],
+    [card, siblings, dispatch, dismiss],
   );
+
+  /** Puts a card back as it was, pressings and all. */
+  const reopen = useCallback((shelved: ShelvedCard) => {
+    turn.current += 1;
+    setPicking(false);
+    setCard(shelved.card);
+    setSiblings(shelved.siblings);
+  }, []);
 
   return {
     permission,
@@ -196,6 +334,34 @@ export function useScannerLogic() {
     handleScan,
     dismiss,
     keep,
+    /** The scan the note under the tray is about, or null once it has said its piece. */
+    justKept: kept.find((scan) => scan.key === justKeptKey) ?? null,
+    /**
+     * Takes the last keep back, and reopens the card it answered.
+     *
+     * A mis-tap is usually the right record sent to the wrong list, so Undo returns to
+     * the question rather than only emptying the row. A keep made on another screen has
+     * no card to return to and is simply dropped.
+     */
+    undoKeep: useCallback(() => {
+      if (justKeptKey === null) return;
+      dispatch(scanActions.dropped(justKeptKey));
+      const answered = lastKept.current;
+      if (answered !== null && answered.key === justKeptKey && shown.current === null) {
+        reopen(answered);
+      }
+      lastKept.current = null;
+    }, [justKeptKey, dispatch, reopen]),
+    /** The card the next sleeve replaced, while its note is still in the feed. */
+    skipped: skipped?.card ?? null,
+    undoSkip: useCallback(() => {
+      if (skipped === null) return;
+      // The sleeve that replaced it may still be in frame; without this it would take
+      // the card straight back.
+      if (shown.current !== null) recent.current.set(shown.current.card.barcode, Date.now());
+      reopen(skipped);
+      setSkipped(null);
+    }, [skipped, reopen]),
     /** The pressing picker, on both the several-pressings card and the "3 others" line. */
     picking,
     openPicker: useCallback(() => setPicking(true), []),
@@ -233,19 +399,29 @@ export function useScannerLogic() {
      * Manual entry, carrying whatever the scanner did read. The digits are the one thing
      * the failed lookup genuinely established, and throwing them away would ask the person
      * to read them off the sleeve themselves.
+     *
+     * Opened in scan context: the form ends in the same Wishlist and Shelf as every card
+     * and the record joins the tray, so typing one in does not end the session.
      */
     enterManually: useCallback(
       (barcode?: string) =>
-        router.push(barcode === undefined ? "/manual" : `/manual?barcode=${barcode}`),
+        router.push(barcode === undefined ? "/manual?scan=1" : `/manual?scan=1&barcode=${barcode}`),
       [router],
     ),
-    /** The duplicate card's second button: the copy they already have. */
+    /** The not-found card's second way out: a title search that keeps the tray. */
+    searchByTitle: useCallback(
+      (barcode: string) => router.push(`/scan/search?barcode=${barcode}`),
+      [router],
+    ),
+    /**
+     * The duplicate card's second button: the copy they already have.
+     *
+     * The card stays open underneath. Looking at the grade is how the question gets
+     * answered, not a way of abandoning it, and the copy's own bar answers it from there.
+     */
     openOwned: useCallback(
-      (copyId: string) => {
-        dismiss();
-        router.push(`/copies/${copyId}`);
-      },
-      [dismiss, router],
+      (copyId: string, barcode: string) => router.push(`/copies/${copyId}?scanned=${barcode}`),
+      [router],
     ),
     close: useCallback(() => {
       if (kept.length === 0) dispatch(scanActions.cleared());

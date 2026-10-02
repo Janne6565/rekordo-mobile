@@ -7,6 +7,8 @@ import { useDetailLogic } from "@/features/detail/useDetailLogic";
 import { PhotoStrip } from "@/features/photos/PhotoStrip";
 import { usePhotoStripLogic } from "@/features/photos/usePhotoStripLogic";
 import { Tracklist } from "@/features/tracklist/Tracklist";
+import { useAppDispatch } from "@/store/hooks";
+import { scanActions } from "@/store/scanSlice";
 import { fonts } from "@/theme/colors";
 import type { Copy, DetailChrome, Release } from "@janne6565/rekordo-shared";
 import {
@@ -15,14 +17,16 @@ import {
   FORMAT_LABELS,
   copyFormat,
   copyPreviewSrc,
+  formatBarcode,
 } from "@janne6565/rekordo-shared";
+import * as Crypto from "expo-crypto";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Pencil, Star, Trash2 } from "lucide-react-native";
+import { ChevronLeft, CopyPlus, Pencil, Star, Trash2 } from "lucide-react-native";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 /**
  * A copy's page (screens 1j, 3a and 3b).
@@ -31,13 +35,19 @@ import { SafeAreaView } from "react-native-safe-area-context";
  * about itself yet, so the page opens on its editor rather than on a page of blanks with
  * an Edit button. Saving or cancelling leaves it in the ordinary read state — the flag
  * only decides where the page starts, never where it stays.
+ *
+ * `scanned` is the barcode the scanner read when this is the copy a duplicate card opened
+ * (scan deck, screen 3a). The page is the same; what changes is the way out, which says
+ * where it leads, and a bar that keeps the card's question answerable from here.
  */
 export function DetailScreen({
   copyId,
   startEditing = false,
+  scanned = null,
 }: {
   readonly copyId: string;
   readonly startEditing?: boolean;
+  readonly scanned?: string | null;
 }) {
   const { t } = useTranslation();
   const logic = useDetailLogic(copyId);
@@ -91,6 +101,7 @@ export function DetailScreen({
         photos={photos}
         editing={editing}
         setEditing={setEditing}
+        scanned={scanned}
       />
       {wash.outgoing !== null && (
         <Animated.View
@@ -107,6 +118,7 @@ export function DetailScreen({
             photos={photos}
             editing={editing}
             setEditing={setEditing}
+            scanned={scanned}
           />
         </Animated.View>
       )}
@@ -126,6 +138,7 @@ interface DetailBodyProps {
   readonly photos: ReturnType<typeof usePhotoStripLogic>;
   readonly editing: boolean;
   readonly setEditing: (editing: boolean) => void;
+  readonly scanned: string | null;
 }
 
 /**
@@ -145,9 +158,12 @@ function DetailBody({
   photos,
   editing,
   setEditing,
+  scanned,
 }: DetailBodyProps) {
   const { t } = useTranslation();
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const insets = useSafeAreaInsets();
   // Left and right move through the order the shelf was showing. The responder sits on the
   // root rather than the ScrollView so it can watch a gesture before the scroll claims it,
   // and it only claims clearly horizontal ones.
@@ -187,13 +203,101 @@ function DetailBody({
     );
   }
 
+  /**
+   * The two answers the duplicate card was asking for, given from the copy itself.
+   *
+   * Opening the copy used to drop the card, so having looked at the grade there was no
+   * longer anywhere to say "yes, a second one". Leaving without adding is the other
+   * answer, so it closes the card too rather than returning to a question already settled.
+   */
+  const backToCamera = () => {
+    dispatch(scanActions.cardDismissed());
+    router.back();
+  };
+  const addSecond = () => {
+    if (scanned === null || release === undefined) return;
+    dispatch(
+      scanActions.kept({
+        key: Crypto.randomUUID(),
+        barcode: scanned,
+        release,
+        format: copy.manualFormat ?? (release.format === "OTHER" ? null : release.format),
+        destination: "SHELF",
+        secondCopy: true,
+        keptAt: Date.now(),
+      }),
+    );
+    router.back();
+  };
+
   return (
     <CoverSheet
       chrome={chrome}
       onClose={() => router.back()}
       fade={swipe.fade}
-      handlers={swipe.handlers}
+      // No leafing to the neighbours from here: the bar below is about this copy, and a
+      // swipe would leave it standing under a different record.
+      handlers={scanned === null ? swipe.handlers : undefined}
       art={art}
+      back={
+        scanned === null ? undefined : (
+          <Pressable
+            accessibilityRole="button"
+            onPress={backToCamera}
+            style={[styles.backToScan, { backgroundColor: chrome.surface }]}
+          >
+            <ChevronLeft size={17} color={chrome.ink} strokeWidth={2} />
+            <Text style={[styles.editText, { color: chrome.ink }]}>
+              {t("scan.owned.backToScanning")}
+            </Text>
+          </Pressable>
+        )
+      }
+      footer={
+        scanned === null ? undefined : (
+          <View
+            style={[
+              styles.scanBar,
+              {
+                backgroundColor: chrome.surface,
+                borderTopColor: chrome.line,
+                paddingBottom: 12 + insets.bottom,
+              },
+            ]}
+          >
+            <Text style={[styles.scanBarNote, { color: chrome.muted }]}>
+              {t("scan.owned.scannedThis", { barcode: formatBarcode(scanned) })}
+            </Text>
+            <View style={styles.scanBarActions}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={backToCamera}
+                style={[
+                  styles.scanBarButton,
+                  styles.scanBarButtonQuiet,
+                  { backgroundColor: chrome.background, borderColor: chrome.line },
+                ]}
+              >
+                <Text style={[styles.scanBarText, { color: chrome.ink }]}>
+                  {t("scan.backToCamera")}
+                </Text>
+              </Pressable>
+              {release !== undefined && (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={addSecond}
+                  style={[styles.scanBarButton, { backgroundColor: chrome.ink }]}
+                >
+                  <CopyPlus size={16} color={chrome.background} strokeWidth={2} />
+                  <Text style={[styles.scanBarText, { color: chrome.background }]}>
+                    {t("scan.owned.addSecond")}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          </View>
+        )
+      }
       action={
         /* On the sleeve, opposite the way out, so the page starts with the record's own
            facts instead of with a button — and so the one thing you can do to it is still
@@ -450,6 +554,37 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   editText: { fontSize: 12.5, fontWeight: "600" },
+  backToScan: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    height: 34,
+    paddingLeft: 9,
+    paddingRight: 14,
+    borderRadius: 999,
+    marginTop: 8,
+  },
+  scanBar: { paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1 },
+  scanBarNote: {
+    fontFamily: "ui-monospace",
+    fontSize: 9.5,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginHorizontal: 2,
+    marginBottom: 10,
+  },
+  scanBarActions: { flexDirection: "row", gap: 10 },
+  scanBarButton: {
+    flex: 1,
+    height: 50,
+    borderRadius: 999,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  scanBarButtonQuiet: { borderWidth: 1 },
+  scanBarText: { fontSize: 14, fontWeight: "600" },
   fields: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 24 },
   card: { borderRadius: 10, padding: 14 },
   fieldCard: { width: "47%" },

@@ -3,11 +3,13 @@ import { ReleaseArt } from "@/components/ReleaseArt";
 import { hiddenPressings, shownPressings } from "@/features/scan/shownPressings";
 import { SCAN_FORMATS, type useScannerLogic } from "@/features/scan/useScannerLogic";
 import { useAppSelector } from "@/store/hooks";
+import { isPendingScan } from "@/store/scanSlice";
 import { colors, fonts } from "@/theme/colors";
 import type { Format, Release } from "@janne6565/rekordo-shared";
 import { CONDITION_LABELS, FORMAT_LABELS, formatBarcode } from "@janne6565/rekordo-shared";
 import {
   Check,
+  ChevronRight,
   CopyPlus,
   Disc3,
   Heart,
@@ -16,6 +18,7 @@ import {
   PencilLine,
   Search,
 } from "lucide-react-native";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -29,7 +32,11 @@ type Logic = ReturnType<typeof useScannerLogic>;
  * makes the second a correction. The camera window stays live above the card, so the next
  * sleeve is a glance away rather than a dismissal away.
  *
- * Turn 28 of the deck, screens 2a through 2e.
+ * Every kind opens on the same row: what the card is about on the left, Skip on the right.
+ * Skip used to be a grey line under the buttons on two of the cards and absent from the
+ * rest, so "not now" was either the last thing read or not on offer at all.
+ *
+ * Scan deck, screens 2b through 2f.
  */
 export function ConfirmCard({ logic }: { readonly logic: Logic }) {
   const card = logic.card;
@@ -69,7 +76,6 @@ export function ConfirmCard({ logic }: { readonly logic: Logic }) {
  * out of reach.
  */
 function Actions({ logic }: { readonly logic: Logic }) {
-  const { t } = useTranslation();
   const card = logic.card;
   if (card === null) return null;
 
@@ -82,17 +88,31 @@ function Actions({ logic }: { readonly logic: Logic }) {
         <DuplicateActions logic={logic} ownedId={card.owned.id} />
       )}
       {card.kind === "MISSING" && <MissingActions logic={logic} barcode={card.barcode} />}
-
-      {(card.kind === "MATCH" || card.kind === "DUPLICATE") && (
-        <Pressable accessibilityRole="button" onPress={logic.dismiss}>
-          <Text style={styles.skip}>{t("scan.skip")}</Text>
-        </Pressable>
-      )}
     </View>
   );
 }
 
-/** Screen 2a: one release, the barcode readable back, both destinations. */
+/**
+ * The row every card opens on: its subject on the left, Skip on the right.
+ *
+ * A labelled pill in the same corner each time, well clear of Wishlist and Shelf. It is
+ * the first thing the eye reads and the one control the hand never has to look for, which
+ * matters most on the cards that used to have no way out but closing the scanner.
+ */
+function CardHead({ logic, children }: { readonly logic: Logic; readonly children: ReactNode }) {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.cardHead}>
+      <View style={styles.cardHeadSubject}>{children}</View>
+      <Pressable accessibilityRole="button" onPress={logic.dismiss} hitSlop={6} style={styles.skip}>
+        <Text style={styles.skipText}>{t("scan.skip")}</Text>
+        <ChevronRight size={14} color={colors.inkMuted} strokeWidth={2} />
+      </Pressable>
+    </View>
+  );
+}
+
+/** Screen 2b: one release, both destinations. */
 function Match({ logic }: { readonly logic: Logic }) {
   const { t } = useTranslation();
   const card = logic.card;
@@ -101,15 +121,17 @@ function Match({ logic }: { readonly logic: Logic }) {
 
   return (
     <>
-      <View style={styles.eyebrow}>
-        <Text style={styles.eyebrowText}>{t("scan.foundIn")}</Text>
+      <CardHead logic={logic}>
+        <Text style={styles.eyebrowText}>
+          {card.source === "TITLE" ? t("scan.foundByTitle") : t("scan.foundIn")}
+        </Text>
         <View style={styles.rule} />
         {logic.pressingCount !== null && (
           <Text style={styles.eyebrowText}>
             {t("scan.pressingOf", { count: logic.pressingCount })}
           </Text>
         )}
-      </View>
+      </CardHead>
 
       <ReleaseHead release={card.picked} format={card.format} />
       <FormatChips logic={logic} others={others} />
@@ -117,7 +139,13 @@ function Match({ logic }: { readonly logic: Logic }) {
   );
 }
 
-/** Screen 2b: several pressings share the barcode, so one has to be picked. */
+/**
+ * Screen 2c: several pressings share the barcode, so one has to be picked.
+ *
+ * Screen 3d is the same card reached through the title search. There the pressings are
+ * the album's rather than the barcode's, so the line under the question says how they were
+ * found and the advice about reissues, which is about barcodes, is left out.
+ */
 function Pressings({ logic }: { readonly logic: Logic }) {
   const { t } = useTranslation();
   const card = logic.card;
@@ -128,13 +156,23 @@ function Pressings({ logic }: { readonly logic: Logic }) {
 
   return (
     <>
-      <View style={styles.pressingHead}>
-        <Text style={styles.serif}>{t("scan.whichPressing")}</Text>
-        <Text style={styles.eyebrowText}>
-          {t("scan.shareBarcode", { count: logic.pressings.length })}
+      <CardHead logic={logic}>
+        <Text style={[styles.serif, styles.fill]}>{t("scan.whichPressing")}</Text>
+      </CardHead>
+      {card.source === "TITLE" ? (
+        <Text style={[styles.eyebrowText, styles.underHead]} numberOfLines={1}>
+          {[t("scan.foundByTitle"), card.picked?.title, card.picked?.artistName]
+            .filter((part) => part != null && part !== "")
+            .join(" · ")}
         </Text>
-      </View>
-      <Text style={styles.body}>{t("scan.reissuesReuse")}</Text>
+      ) : (
+        <>
+          <Text style={[styles.eyebrowText, styles.underHead]}>
+            {t("scan.shareBarcode", { count: logic.pressings.length })}
+          </Text>
+          <Text style={styles.body}>{t("scan.reissuesReuse")}</Text>
+        </>
+      )}
 
       <View style={styles.pressingList}>
         {shown.map((release) => (
@@ -155,7 +193,7 @@ function Pressings({ logic }: { readonly logic: Logic }) {
   );
 }
 
-/** Screen 2c: already on the shelf. A fact, not an error. */
+/** Screen 2d: already on the shelf. A fact, not an error. */
 function Duplicate({ logic }: { readonly logic: Logic }) {
   const { t } = useTranslation();
   const card = logic.card;
@@ -164,10 +202,10 @@ function Duplicate({ logic }: { readonly logic: Logic }) {
 
   return (
     <>
-      <View style={styles.eyebrow}>
+      <CardHead logic={logic}>
         <LibraryBig size={13} color={colors.accentStrong} strokeWidth={2} />
         <Text style={[styles.eyebrowText, styles.eyebrowStrong]}>{t("scan.alreadyOwned")}</Text>
-      </View>
+      </CardHead>
 
       <ReleaseHead
         release={card.picked}
@@ -191,9 +229,15 @@ function Duplicate({ logic }: { readonly logic: Logic }) {
   );
 }
 
-/** Add another of the same, or go and look at the one already on the shelf. */
+/**
+ * Add another of the same, or go and look at the one already on the shelf.
+ *
+ * Only the two real answers: with Skip in the header, "not now" no longer reads as a
+ * third button underneath them.
+ */
 function DuplicateActions({ logic, ownedId }: { readonly logic: Logic; readonly ownedId: string }) {
   const { t } = useTranslation();
+  const barcode = logic.card?.barcode ?? "";
   return (
     <View style={styles.stack}>
       <Pressable
@@ -206,7 +250,7 @@ function DuplicateActions({ logic, ownedId }: { readonly logic: Logic; readonly 
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        onPress={() => logic.openOwned(ownedId)}
+        onPress={() => logic.openOwned(ownedId, barcode)}
         style={styles.secondary}
       >
         <Text style={styles.secondaryText}>{t("scan.openTheOneIHave")}</Text>
@@ -216,11 +260,11 @@ function DuplicateActions({ logic, ownedId }: { readonly logic: Logic; readonly 
 }
 
 /**
- * Screen 2d: the read was clean and no catalogue has the number.
+ * Screen 2e: the read was clean and no catalogue has the number.
  *
- * The deck also drew a near-miss suggestion under this. Neither Discogs nor MusicBrainz
- * offers a fuzzy barcode search, so there is nothing honest to put there — the two ways
- * out are the whole card, and the digits carry into both of them.
+ * The digits sit in the header slot every other card uses for its eyebrow: they are what
+ * this card is about, and the one thing the failed lookup did establish. The two ways on
+ * are the whole card, and the digits carry into both of them.
  */
 function Missing({ logic }: { readonly logic: Logic }) {
   const { t } = useTranslation();
@@ -229,13 +273,22 @@ function Missing({ logic }: { readonly logic: Logic }) {
 
   return (
     <>
-      <Text style={styles.serif}>{t("scan.noRelease.title")}</Text>
+      <CardHead logic={logic}>
+        <Text style={styles.headDigits}>{formatBarcode(card.barcode)}</Text>
+      </CardHead>
+      <Text style={[styles.serif, styles.underDigits]}>{t("scan.noRelease.title")}</Text>
       <Text style={styles.body}>{t("scan.noRelease.body")}</Text>
     </>
   );
 }
 
-/** The two ways out of a barcode nothing has heard of, with the digits carried into both. */
+/**
+ * The two ways on from a barcode nothing has heard of, with the digits carried into both.
+ *
+ * "Search title" used to call dismiss: it closed the card and searched nothing, which made
+ * it the card's hidden Skip. Skip is in the header now, and this opens a search that sits
+ * inside the session, so the tray is still there when it comes back.
+ */
 function MissingActions({ logic, barcode }: { readonly logic: Logic; readonly barcode: string }) {
   const { t } = useTranslation();
   return (
@@ -250,7 +303,7 @@ function MissingActions({ logic, barcode }: { readonly logic: Logic; readonly ba
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        onPress={logic.dismiss}
+        onPress={() => logic.searchByTitle(barcode)}
         style={[styles.secondary, styles.half]}
       >
         <Search size={16} color="rgba(25,23,19,0.75)" strokeWidth={2} />
@@ -260,24 +313,22 @@ function MissingActions({ logic, barcode }: { readonly logic: Logic; readonly ba
   );
 }
 
-/** Screen 2e: scanning is local, lookups are not. Both destinations still work. */
+/** Scanning is local, lookups are not. Both destinations still work, and so does Skip. */
 function Offline({ logic }: { readonly logic: Logic }) {
   const { t } = useTranslation();
   const card = logic.card;
-  const waiting = useAppSelector(
-    (state) => state.scan.kept.filter((scan) => scan.release === null).length,
-  );
+  const waiting = useAppSelector((state) => state.scan.kept.filter(isPendingScan).length);
   const ready = useAppSelector(
-    (state) => state.scan.kept.filter((scan) => scan.release !== null).length,
+    (state) => state.scan.kept.filter((scan) => !isPendingScan(scan)).length,
   );
   if (card === null) return null;
 
   return (
     <>
-      <View style={styles.eyebrow}>
+      <CardHead logic={logic}>
         <Disc3 size={13} color={colors.inkSubtle} strokeWidth={2} />
         <Text style={styles.eyebrowText}>{t("scan.notYetIdentified")}</Text>
-      </View>
+      </CardHead>
 
       <View style={styles.head}>
         <View style={styles.pendingArt}>
@@ -483,15 +534,39 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     marginHorizontal: 10,
     backgroundColor: colors.surface,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: "rgba(25,23,19,0.09)",
-    borderBottomWidth: 0,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
+    borderRadius: 22,
     paddingHorizontal: 18,
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingTop: 16,
+    paddingBottom: 18,
   },
+  fill: { flex: 1, minWidth: 0 },
+
+  cardHead: { flexDirection: "row", alignItems: "center", gap: 10 },
+  cardHeadSubject: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 8 },
+  skip: {
+    height: 36,
+    paddingLeft: 14,
+    paddingRight: 12,
+    borderRadius: 999,
+    backgroundColor: colors.paper,
+    borderWidth: 1,
+    borderColor: "rgba(25,23,19,0.12)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  skipText: {
+    fontFamily: fonts.sans,
+    fontSize: 12.5,
+    fontWeight: "600",
+    color: "rgba(25,23,19,0.72)",
+  },
+  underHead: { marginTop: 4 },
+  underDigits: { marginTop: 10 },
+  headDigits: { flex: 1, fontFamily: MONO, fontSize: 10.5, color: colors.inkMuted },
 
   scroll: { flexShrink: 1 },
   actions: { flexShrink: 0 },
@@ -507,7 +582,7 @@ const styles = StyleSheet.create({
   eyebrowStrong: { color: colors.accentStrong },
   rule: { flex: 1, height: 1, backgroundColor: "rgba(25,23,19,0.1)" },
 
-  head: { flexDirection: "row", gap: 14, marginTop: 14 },
+  head: { flexDirection: "row", gap: 14, marginTop: 12 },
   headArt: { width: 89, height: 74 },
   headText: { flex: 1, minWidth: 0 },
   headMeta: { fontFamily: fonts.sans, fontSize: 13, color: colors.inkMuted, marginTop: 4 },
@@ -577,14 +652,6 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     fontWeight: "600",
     color: "rgba(25,23,19,0.75)",
-  },
-  skip: {
-    fontFamily: fonts.sans,
-    fontSize: 12.5,
-    fontWeight: "500",
-    color: colors.inkMuted,
-    textAlign: "center",
-    marginTop: 13,
   },
 
   aside: {
