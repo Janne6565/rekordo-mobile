@@ -1,4 +1,6 @@
 import { accountConsents } from "@/api/auth";
+import { RestartSheet } from "@/features/legal/RestartSheet";
+import { RestartVeil } from "@/features/legal/RestartVeil";
 import { useHiddenAppearance } from "@/features/legal/useHiddenAppearance";
 import { useLegalLanguage } from "@/features/legal/useLegalLanguage";
 import { colors, fonts, ink } from "@/theme/colors";
@@ -8,7 +10,7 @@ import * as Application from "expo-application";
 import { useRouter } from "expo-router";
 import { ChevronLeft, ChevronRight, Download, Pencil, Trash2 } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const SLUG_OF: Record<LegalDocumentId, string> = {
@@ -32,16 +34,7 @@ export function LegalScreen({ signedIn }: { readonly signedIn: boolean }) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const { language, choose } = useLegalLanguage();
-  const appearance = useHiddenAppearance({
-    // A stand-in until the restart warning is designed: the system's own dialog.
-    confirmRestart: () =>
-      new Promise((resolve) =>
-        Alert.alert(t("legal.appearance.restartTitle"), t("legal.appearance.restartBody"), [
-          { text: t("legal.appearance.cancel"), style: "cancel", onPress: () => resolve(false) },
-          { text: t("legal.appearance.restart"), onPress: () => resolve(true) },
-        ]),
-      ),
-  });
+  const appearance = useHiddenAppearance();
 
   // Only meaningful with an account, and quietly empty without one -- a device that never
   // registered has agreed to nothing on a server.
@@ -184,6 +177,21 @@ export function LegalScreen({ signedIn }: { readonly signedIn: boolean }) {
           </Pressable>
         </View>
       </ScrollView>
+
+      <RestartSheet
+        reason={appearance.asking}
+        onRestart={appearance.restart}
+        onCancel={appearance.cancel}
+      />
+      {/* 1d-v: in a modal of its own so it covers the status bar too, not just the screen. */}
+      <Modal
+        visible={appearance.leavingFor !== null}
+        transparent
+        animationType="none"
+        statusBarTranslucent
+      >
+        <RestartVeil dark={appearance.leavingFor ?? false} visible onShown={appearance.leave} />
+      </Modal>
 
       {appearance.tapsLeft !== null && (
         <View style={styles.toastWrap} pointerEvents="none">

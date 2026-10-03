@@ -82,6 +82,12 @@ const dark: { readonly [K in keyof typeof light]: string } = {
   switchOn: "#d08a5f",
 };
 
+/**
+ * Both palettes, for the one thing that has to paint the *other* one: the veil a restart
+ * fades to (deck 1d-v), which shows the new mode before the app has reloaded into it.
+ */
+export const palettes = { light, dark } as const;
+
 export const colors = {
   ...(isDark ? dark : light),
 

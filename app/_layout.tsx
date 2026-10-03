@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRootNavigationState, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Appearance, Platform, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -9,6 +9,7 @@ import { Provider } from "react-redux";
 import "@/i18n/config";
 import { RestoreSession } from "@/features/auth/RestoreSession";
 import { SignInConflictSheet } from "@/features/auth/SignInConflictSheet";
+import { RestartVeil } from "@/features/legal/RestartVeil";
 import { PushInvite } from "@/features/notifications/PushInvite";
 import { UploadRefusalSheet } from "@/features/photos/UploadRefusalSheet";
 import { UndoProvider } from "@/features/wishlist/UndoBar";
@@ -30,18 +31,27 @@ Appearance.setColorScheme(isDark ? "dark" : "light");
 /**
  * Back onto the screen the appearance was switched from, once the restart it takes is over.
  *
- * Waits for the root navigator: pushing before it has mounted is an error in expo-router.
+ * The app starts under the 1d-v veil, in the new palette, so the relaunch shows no flash of
+ * the old one; the veil fades once the screen is back behind it. Waits for the root
+ * navigator: pushing before it has mounted is an error in expo-router.
  */
 function ReturnAfterRestart() {
   const router = useRouter();
   const ready = useRootNavigationState()?.key !== undefined;
+  const [route] = useState(takeReturnTo);
+  const [veiled, setVeiled] = useState(route !== null);
   useEffect(() => {
-    if (!ready) return;
-    const route = takeReturnTo();
-    if (route !== null) router.push(route as never);
-  }, [ready, router]);
-  return null;
+    if (!ready || route === null) return;
+    router.push(route as never);
+    // A beat for the pushed screen to draw before the veil lifts off it.
+    const lift = setTimeout(() => setVeiled(false), VEIL_HOLD_MS);
+    return () => clearTimeout(lift);
+  }, [ready, route, router]);
+  if (route === null) return null;
+  return <RestartVeil dark={isDark} visible={veiled} />;
 }
+
+const VEIL_HOLD_MS = 120;
 
 /** How round the card's top edge is on Android, in the absence of a system default. */
 const SHEET_RADIUS = 28;

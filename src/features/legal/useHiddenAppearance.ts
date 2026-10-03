@@ -1,3 +1,4 @@
+import type { RestartReason } from "@/features/legal/RestartSheet";
 import {
   readAppearanceRevealed,
   writeAppearanceRevealed,
@@ -18,43 +19,34 @@ const TAP_WINDOW_MS = 1500;
 const TOAST_MS = 1200;
 
 /**
- * Deck "Rekordo Dark Mode · Mobile", 1a-1c: the hidden dark mode on Legal & privacy.
+ * Deck "Rekordo Dark Mode · Mobile", 1a-1d: the hidden dark mode on Legal & privacy.
  *
  * Seven taps on the version line reveal an Appearance section with one switch; seven more
  * hide it again and return the app to light. The section stays found from then on, per
  * device. Turning the switch off alone keeps the section.
  *
- * The palette is chosen at start-up (see `theme/colors.ts`), so flipping the switch asks
- * first and then restarts the app straight back onto this screen, now in the other mode.
+ * The palette is chosen at start-up (see `theme/colors.ts`), so every change is a restart,
+ * asked first in the 1d sheet. The switch moves under the thumb before the sheet rises, so
+ * the question reads as the result of the flip, and springs back if it is cancelled. Restart
+ * fades the veil in (1d-v) and only then stores the mode and reloads, straight back onto
+ * this screen.
  */
-export function useHiddenAppearance({
-  confirmRestart,
-}: {
-  /** Asks before the restart a switch takes; resolves true to go ahead. */
-  readonly confirmRestart: () => Promise<boolean>;
-}) {
+export function useHiddenAppearance() {
   const [revealed, setRevealed] = useState(readAppearanceRevealed);
   const [taps, setTaps] = useState(0);
   const [toast, setToast] = useState<number | null>(null);
+  const [asking, setAsking] = useState<RestartReason | null>(null);
+  /** The restart under way once Restart is pressed: the mode it goes into, and whether the section goes too. */
+  const [leaving, setLeaving] = useState<{ readonly dark: boolean; readonly hide: boolean } | null>(
+    null,
+  );
   const lastTap = useRef(0);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => () => clearTimeout(toastTimer.current), []);
 
-  /** Asks, then stores the mode (and whatever else `alsoWrite` says) and restarts into it. */
-  const restartInto = useCallback(
-    async (dark: boolean, alsoWrite?: () => void) => {
-      if (dark === isDark) return;
-      if (!(await confirmRestart())) return;
-      writeDarkMode(dark);
-      alsoWrite?.();
-      writeReturnTo("/legal");
-      await reloadAppAsync("Appearance changed");
-    },
-    [confirmRestart],
-  );
-
   const tapVersion = useCallback(() => {
+    if (asking !== null || leaving !== null) return;
     const now = Date.now();
     const count = now - lastTap.current > TAP_WINDOW_MS ? 1 : taps + 1;
     lastTap.current = now;
@@ -70,25 +62,24 @@ export function useHiddenAppearance({
       return;
     }
 
-    setTaps(0);
     setToast(null);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     if (!revealed) {
+      setTaps(0);
       writeAppearanceRevealed(true);
       setRevealed(true);
       return;
     }
-    // Hiding it again also returns the app to light, so nothing is left switched on with
-    // no way to see the switch.
-    // Stored only once the restart is agreed to: cancelling must not leave a dark app whose
-    // switch is gone.
+    // Hiding the section while dark is on ends dark mode too, which is a restart (1d-iii).
+    // The version line keeps its pressed tint while that is asked.
     if (isDark) {
-      void restartInto(false, () => writeAppearanceRevealed(false));
+      setAsking("HIDE");
       return;
     }
+    setTaps(0);
     writeAppearanceRevealed(false);
     setRevealed(false);
-  }, [taps, revealed, restartInto]);
+  }, [taps, revealed, asking, leaving]);
 
   return {
     revealed,
@@ -96,8 +87,34 @@ export function useHiddenAppearance({
     tapsLeft: toast,
     /** True while a count is under way, for the version line's pressed tint. */
     counting: taps > 0,
-    dark: isDark,
+    /** Where the switch stands: already at the asked-for position while the sheet is up. */
+    dark: asking === "ON" ? true : asking === "OFF" ? false : isDark,
+    asking,
+    /** The mode the veil fades to, or null while no restart is under way. */
+    leavingFor: leaving?.dark ?? null,
     tapVersion,
-    setDark: (dark: boolean) => void restartInto(dark),
+    setDark: (dark: boolean) => {
+      if (dark !== isDark) setAsking(dark ? "ON" : "OFF");
+    },
+    /** Restart now: the veil fades in first, and `leave` runs once it covers the screen. */
+    restart: () => {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setLeaving({ dark: asking === "ON", hide: asking === "HIDE" });
+      setAsking(null);
+    },
+    /** Cancel keeps everything as it was, and starts the tap count over. */
+    cancel: () => {
+      setAsking(null);
+      setTaps(0);
+    },
+    /** Stores the new mode and reloads into it. Called by the veil once it is opaque. */
+    leave: () => {
+      if (leaving === null) return;
+      writeDarkMode(leaving.dark);
+      // Leaving dark by the seven taps hides the section as well; the switch never does.
+      if (leaving.hide) writeAppearanceRevealed(false);
+      writeReturnTo("/legal");
+      void reloadAppAsync("Appearance changed");
+    },
   };
 }
