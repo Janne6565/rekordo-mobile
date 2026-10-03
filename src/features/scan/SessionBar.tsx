@@ -1,6 +1,6 @@
 import { useAppSelector } from "@/store/hooks";
 import { countByDestination } from "@/store/scanSlice";
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, ink } from "@/theme/colors";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -65,11 +65,11 @@ const styles = StyleSheet.create({
     paddingRight: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: "rgba(25,23,19,0.1)",
+    borderTopColor: ink(0.1),
   },
   text: { flex: 1, minWidth: 0 },
   count: { fontFamily: fonts.sans, fontSize: 13.5, fontWeight: "600", color: colors.ink },
-  split: { fontFamily: MONO, fontSize: 10.5, color: "rgba(25,23,19,0.5)", marginTop: 2 },
+  split: { fontFamily: MONO, fontSize: 10.5, color: ink(0.5), marginTop: 2 },
   review: {
     height: 46,
     paddingHorizontal: 24,
@@ -80,9 +80,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  reviewQuiet: { backgroundColor: colors.surface, borderColor: "rgba(25,23,19,0.16)" },
-  reviewEmpty: { backgroundColor: "rgba(25,23,19,0.08)", borderColor: "transparent" },
-  reviewText: { fontFamily: fonts.sans, fontSize: 14, fontWeight: "600", color: "#ffffff" },
+  reviewQuiet: { backgroundColor: colors.surface, borderColor: ink(0.16) },
+  reviewEmpty: { backgroundColor: ink(0.08), borderColor: "transparent" },
+  reviewText: { fontFamily: fonts.sans, fontSize: 14, fontWeight: "600", color: colors.onInk },
   reviewTextQuiet: { color: colors.ink },
-  reviewTextEmpty: { color: "rgba(25,23,19,0.35)" },
+  reviewTextEmpty: { color: ink(0.35) },
 });

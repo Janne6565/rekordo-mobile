@@ -2,7 +2,7 @@ import { ReleaseArt } from "@/components/ReleaseArt";
 import { scanFormat } from "@/features/scan/useScannerLogic";
 import { useAppDispatch } from "@/store/hooks";
 import { type KeptScan, scanActions, scanNaming } from "@/store/scanSlice";
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, ink } from "@/theme/colors";
 import { FORMAT_LABELS, formatBarcode } from "@janne6565/rekordo-shared";
 import { Disc3, Heart, X } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
@@ -37,7 +37,7 @@ export function TrayRow({
       <View style={styles.artBox}>
         {naming === null ? (
           <View style={styles.pending}>
-            <Disc3 size={20} color="rgba(25,23,19,0.3)" strokeWidth={1.6} />
+            <Disc3 size={20} color={ink(0.3)} strokeWidth={1.6} />
           </View>
         ) : (
           <ReleaseArt
@@ -49,7 +49,7 @@ export function TrayRow({
         )}
         {wished && (
           <View style={styles.badge}>
-            <Heart size={9} color="#ffffff" strokeWidth={2.6} />
+            <Heart size={9} color={colors.onInk} strokeWidth={2.6} />
           </View>
         )}
       </View>
@@ -84,7 +84,7 @@ export function TrayRow({
         onPress={() => dispatch(scanActions.dropped(scan.key))}
         hitSlop={8}
       >
-        <X size={15} color="rgba(25,23,19,0.35)" strokeWidth={2} />
+        <X size={15} color={ink(0.35)} strokeWidth={2} />
       </Pressable>
     </View>
   );
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(25,23,19,0.08)",
+    borderBottomColor: ink(0.08),
     marginTop: 6,
   },
   rowLast: { borderBottomWidth: 0 },
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 42,
     borderRadius: 6,
-    backgroundColor: "#eae6de",
+    backgroundColor: colors.well,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -130,5 +130,5 @@ const styles = StyleSheet.create({
   text: { flex: 1, minWidth: 0 },
   title: { fontFamily: fonts.sans, fontSize: 13, fontWeight: "600", color: colors.ink },
   digits: { fontFamily: MONO, fontSize: 12.5, color: colors.ink },
-  meta: { fontFamily: fonts.sans, fontSize: 11.5, color: "rgba(25,23,19,0.5)", marginTop: 2 },
+  meta: { fontFamily: fonts.sans, fontSize: 11.5, color: ink(0.5), marginTop: 2 },
 });

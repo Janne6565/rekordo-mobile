@@ -69,7 +69,7 @@ export function SharingScreen() {
               <Switch
                 value={settings.findable ?? true}
                 onValueChange={(findable) => logic.set({ findable })}
-                trackColor={{ true: colors.ink, false: colors.line }}
+                trackColor={{ true: colors.switchOn, false: colors.line }}
               />
             </View>
           </View>
@@ -136,7 +136,7 @@ export function SharingScreen() {
               <Switch
                 value={settings.pricesPublic ?? false}
                 onValueChange={(pricesPublic) => logic.set({ pricesPublic })}
-                trackColor={{ true: colors.ink, false: colors.line }}
+                trackColor={{ true: colors.switchOn, false: colors.line }}
               />
             </View>
           </View>
@@ -158,7 +158,7 @@ export function SharingScreen() {
               <Switch
                 value={settings.ratingsShared ?? true}
                 onValueChange={(ratingsShared) => logic.set({ ratingsShared })}
-                trackColor={{ true: colors.ink, false: colors.line }}
+                trackColor={{ true: colors.switchOn, false: colors.line }}
               />
             </View>
           </View>

@@ -8,7 +8,7 @@ import { Segments } from "@/features/friends/Segments";
 import { useFriendsLogic } from "@/features/friends/useFriendsLogic";
 import { useSwap } from "@/features/friends/useSwap";
 import type { RecentCollector } from "@/local/settings";
-import { colors, fonts } from "@/theme/colors";
+import { accent, colors, fonts, ink } from "@/theme/colors";
 import { useRouter } from "expo-router";
 import { AtSign, ChevronRight, Lock, Search, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
@@ -644,7 +644,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(25,23,19,0.05)",
+    backgroundColor: ink(0.05),
   },
 
   emptyCard: {
@@ -663,7 +663,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(25,23,19,0.05)",
+    backgroundColor: ink(0.05),
   },
   emptyCardTitle: { fontFamily: fonts.serif, fontSize: 19, color: colors.ink, marginTop: 12 },
   emptyCardBody: {
@@ -699,7 +699,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(162,87,58,0.35)",
+    borderColor: accent(0.35),
     backgroundColor: colors.surface,
   },
   requestName: { fontFamily: fonts.sans, fontSize: 13, fontWeight: "600", color: colors.ink },

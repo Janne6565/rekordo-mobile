@@ -10,7 +10,7 @@ import {
   PRIMARY_TYPES,
   useDiscographyLogic,
 } from "@/features/artists/useDiscographyLogic";
-import { colors } from "@/theme/colors";
+import { colors, ink } from "@/theme/colors";
 import type { Album, Artist, Release } from "@janne6565/rekordo-shared";
 import { CONDITION_SHORT } from "@janne6565/rekordo-shared";
 import { useRouter } from "expo-router";
@@ -399,7 +399,7 @@ function AlbumRow({
             onPress={() => onAdd(album)}
             style={styles.destination}
           >
-            <Plus size={16} color="#ffffff" strokeWidth={2} />
+            <Plus size={16} color={colors.onInk} strokeWidth={2} />
           </Pressable>
         )}
       </Pressable>
@@ -452,7 +452,7 @@ function AlbumSkeletons() {
   );
 }
 
-const HAIRLINE = "rgba(25,23,19,0.08)";
+const HAIRLINE = ink(0.08);
 const MONO = "ui-monospace";
 
 const styles = StyleSheet.create({
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.1)",
+    borderColor: ink(0.1),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: "uppercase",
     color: colors.inkMuted,
-    backgroundColor: "rgba(25,23,19,0.05)",
+    backgroundColor: ink(0.05),
     borderRadius: 5,
     paddingHorizontal: 9,
     paddingVertical: 5,
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: "uppercase",
     color: colors.ink,
-    backgroundColor: "rgba(25,23,19,0.09)",
+    backgroundColor: colors.line,
     borderRadius: 5,
     paddingHorizontal: 9,
     paddingVertical: 5,
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.12)",
+    borderColor: ink(0.12),
   },
   filterFocused: { borderWidth: 1.5, borderColor: colors.ink },
   filterInput: { flex: 1, fontSize: 13.5, color: colors.ink },
@@ -544,11 +544,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.12)",
+    borderColor: ink(0.12),
   },
   chipActive: { backgroundColor: colors.ink, borderColor: colors.ink },
   chipText: { fontSize: 11.5, fontWeight: "500", color: colors.inkMuted },
-  chipTextActive: { fontWeight: "600", color: "#ffffff" },
+  chipTextActive: { fontWeight: "600", color: colors.onInk },
   section: {
     fontSize: 10,
     letterSpacing: 1.2,
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.14)",
+    borderColor: ink(0.14),
   },
   addPillText: { fontSize: 11.5, fontWeight: "600", color: colors.inkMuted },
   /* 6b: the two destinations on a row that offers them, and the line on a row that does
@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     paddingHorizontal: 13,
     borderRadius: 12,
-    backgroundColor: "rgba(25,23,19,0.04)",
+    backgroundColor: ink(0.04),
   },
   pressingRow: {
     flexDirection: "row",
@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.09)",
+    borderColor: colors.line,
   },
   restTitle: { fontSize: 12.5, fontWeight: "600", color: colors.ink },
   restBody: { fontSize: 11.5, lineHeight: 17, color: colors.inkMuted, marginTop: 3 },

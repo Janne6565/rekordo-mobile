@@ -1,5 +1,6 @@
 import { CoverPlaceholder } from "@/components/CoverPlaceholder";
 import { usePulse } from "@/components/Skeleton";
+import { isDark } from "@/theme/colors";
 import type { Format } from "@janne6565/rekordo-shared";
 import { LinearGradient } from "expo-linear-gradient";
 import type { ReactNode } from "react";
@@ -225,7 +226,13 @@ function Plug() {
 }
 
 /** The deck's paper, flattened: React Native has no repeating gradient to stripe it with. */
-const PAPER = "#e7e2d9";
+const PAPER = isDark ? "#282521" : "#e7e2d9";
+
+/*
+ * Dark mode (deck 3b): the objects keep their own colours, but the shadows they cast go
+ * deeper, since a 16% near-black shadow vanishes on a near-black ground.
+ */
+const SHADOW = isDark ? "#000000" : "#191713";
 
 const styles = StyleSheet.create({
   /*
@@ -240,8 +247,8 @@ const styles = StyleSheet.create({
     top: 0,
     width: "83.333%",
     height: "100%",
-    shadowColor: "#191713",
-    shadowOpacity: 0.16,
+    shadowColor: SHADOW,
+    shadowOpacity: isDark ? 0.5 : 0.16,
     shadowRadius: 8,
     shadowOffset: { width: 3, height: 1 },
     elevation: 3,
@@ -251,7 +258,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     borderRadius: 2,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(25,23,19,0.12)",
+    borderColor: isDark ? "rgba(244,241,236,0.08)" : "rgba(25,23,19,0.12)",
   },
 
   disc: {
@@ -265,15 +272,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,0,0,0.35)",
+    // In dark mode a faint light rim, so the black disc separates from the black ground.
+    borderColor: isDark ? "rgba(244,241,236,0.12)" : "rgba(0,0,0,0.35)",
     /*
      * The deck's drop shadow, and on the CD it is not decoration but the whole reason the
      * disc is visible: a near-white disc leaning out over near-white paper has nothing but
      * this to separate it from the page. Which is also why nothing here clips — iOS draws
      * no shadow on a view that clips its own contents, and the sheen is round on its own.
      */
-    shadowColor: "#191713",
-    shadowOpacity: 0.28,
+    shadowColor: SHADOW,
+    shadowOpacity: isDark ? 0.55 : 0.28,
     shadowRadius: 7,
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
@@ -282,7 +290,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f2f0ec",
     borderColor: "rgba(25,23,19,0.28)",
     borderWidth: 1.5,
-    shadowOpacity: 0.26,
+    shadowOpacity: isDark ? 0.5 : 0.26,
   },
   /** The one groove the rim actually shows; the rest of the deck's rings are behind the cover. */
   recordGroove: {
@@ -319,8 +327,8 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4,
     borderBottomLeftRadius: 2,
     backgroundColor: "#211e18",
-    shadowColor: "#191713",
-    shadowOpacity: 0.3,
+    shadowColor: SHADOW,
+    shadowOpacity: isDark ? 0.55 : 0.3,
     shadowRadius: 7,
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,

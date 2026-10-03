@@ -1,7 +1,7 @@
 import { useAccountLogic } from "@/features/auth/useAccountLogic";
 import { DeleteAccountSheet } from "@/features/legal/DeleteAccountSheet";
 import { useStore } from "@/local/StoreProvider";
-import { colors, fonts } from "@/theme/colors";
+import { accent, accentStrong, colors, fonts, ink } from "@/theme/colors";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { ChevronLeft, FileJson, Table } from "lucide-react-native";
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.16)",
+    borderColor: ink(0.16),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -249,16 +249,25 @@ const styles = StyleSheet.create({
     marginTop: 12,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.16)",
+    borderColor: ink(0.16),
     alignItems: "center",
     justifyContent: "center",
   },
   secondaryButtonText: { fontSize: 12.5, fontWeight: "600", color: colors.ink },
   dim: { opacity: 0.5 },
   hint: { fontSize: 11, color: colors.inkSubtle, marginTop: 9 },
-  danger: { marginTop: 22, padding: 15, borderRadius: 12, backgroundColor: "rgba(162,87,58,0.07)" },
+  danger: {
+    marginTop: 22,
+    padding: 15,
+    borderRadius: 12,
+    backgroundColor: accent(0.07),
+  },
   dangerTitle: { fontSize: 13.5, fontWeight: "600", color: colors.accentStrong },
-  dangerArticle: { fontSize: 9.5, fontWeight: "500", color: "rgba(140,69,48,0.6)" },
+  dangerArticle: {
+    fontSize: 9.5,
+    fontWeight: "500",
+    color: accentStrong(0.6),
+  },
   dangerButton: {
     height: 38,
     borderRadius: 9,

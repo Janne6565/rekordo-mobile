@@ -1,5 +1,5 @@
 import type { useLibraryLogic } from "@/features/library/useLibraryLogic";
-import { colors } from "@/theme/colors";
+import { colors, ink } from "@/theme/colors";
 import { Check, X } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
     paddingVertical: 11,
     borderRadius: 10,
-    backgroundColor: "rgba(25,23,19,0.05)",
+    backgroundColor: ink(0.05),
   },
   text: { flex: 1, fontSize: 11.5, lineHeight: 17, color: colors.inkMuted },
   action: { fontSize: 11.5, fontWeight: "600", color: colors.accent },

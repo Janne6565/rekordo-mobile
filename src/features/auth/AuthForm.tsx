@@ -1,7 +1,7 @@
 import { EmailAuthSheet } from "@/features/auth/EmailAuthSheet";
 import { ProviderMark } from "@/features/auth/ProviderMark";
 import type { useAccountLogic } from "@/features/auth/useAccountLogic";
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, ink } from "@/theme/colors";
 import { Disc3, Mail } from "lucide-react-native";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.surface,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(25,23,19,0.14)",
+    borderColor: ink(0.14),
   },
   providerText: { fontSize: 14.5, fontWeight: "600", color: colors.ink },
   dim: { opacity: 0.5 },
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.28)",
+    borderColor: ink(0.28),
   },
   withEmailText: { fontSize: 14.5, fontWeight: "600", color: colors.ink },
   error: { fontSize: 13, color: colors.accent, textAlign: "center" },

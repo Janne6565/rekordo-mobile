@@ -1,3 +1,4 @@
+import { colors } from "@/theme/colors";
 import * as Haptics from "expo-haptics";
 import {
   type ReactNode,
@@ -854,7 +855,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     top: 0,
-    shadowColor: "#191713",
+    shadowColor: colors.shadow,
     shadowOpacity: 0.22,
     shadowRadius: 26,
     shadowOffset: { width: 0, height: 14 },

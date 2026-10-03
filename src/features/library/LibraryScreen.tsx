@@ -9,7 +9,7 @@ import { type LibraryRow, useLibraryLogic } from "@/features/library/useLibraryL
 import { useCoverPhotos } from "@/features/photos/useCoverPhotos";
 import { RollSheet } from "@/features/roll/RollSheet";
 import type { CatalogueGap } from "@/local/settings";
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, ink } from "@/theme/colors";
 import type { Format } from "@janne6565/rekordo-shared";
 import { catalogArtShown, copyFormat, copyPreviewSrc } from "@janne6565/rekordo-shared";
 import { FORMAT_LABELS } from "@janne6565/rekordo-shared";
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   metaActionOff: { opacity: 0.5 },
   metaActionText: { fontSize: 11.5, fontWeight: "600", color: colors.accent },
   metaActionTextOff: { color: colors.inkSubtle },
-  metaRule: { width: StyleSheet.hairlineWidth, height: 12, backgroundColor: "rgba(25,23,19,0.16)" },
+  metaRule: { width: StyleSheet.hairlineWidth, height: 12, backgroundColor: ink(0.16) },
   notice: {
     marginHorizontal: 18,
     marginBottom: 10,

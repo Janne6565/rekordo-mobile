@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/Skeleton";
 import { artistSubtitle } from "@/domain/artist";
 import { useArtistImage } from "@/features/add/useArtistImage";
 import type { useArtistSearchLogic } from "@/features/add/useArtistSearchLogic";
-import { colors } from "@/theme/colors";
+import { colors, ink } from "@/theme/colors";
 import type { Artist } from "@janne6565/rekordo-shared";
 import { ChevronDown, ChevronRight } from "lucide-react-native";
 import { useState } from "react";
@@ -40,8 +40,8 @@ export function ArtistAvatar({
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
         <Defs>
           <Pattern id="artistStripes" width={14.14} height={14.14} patternUnits="userSpaceOnUse">
-            <Rect width={14.14} height={14.14} fill="#e7e3db" />
-            <Line x1={0} y1={14.14} x2={14.14} y2={0} stroke="#ddd8ce" strokeWidth={7.07} />
+            <Rect width={14.14} height={14.14} fill={colors.well} />
+            <Line x1={0} y1={14.14} x2={14.14} y2={0} stroke={ink(0.05)} strokeWidth={7.07} />
           </Pattern>
         </Defs>
         <Rect width={size} height={size} fill="url(#artistStripes)" />
@@ -175,7 +175,7 @@ function ArtistSkeletons() {
  * chrome the block was first drawn on. The add screen went light and this file did not
  * follow, which left the whole section white on white and effectively invisible.
  */
-const HAIRLINE = "rgba(25,23,19,0.08)";
+const HAIRLINE = ink(0.08);
 
 const styles = StyleSheet.create({
   avatar: {
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.9,
     textTransform: "uppercase",
     color: colors.inkMuted,
-    backgroundColor: "rgba(25,23,19,0.06)",
+    backgroundColor: ink(0.06),
     borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 3,

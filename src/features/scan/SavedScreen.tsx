@@ -3,7 +3,7 @@ import { useSaveBatch } from "@/features/scan/useSaveBatch";
 import { useStore } from "@/local/StoreProvider";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { type KeptScan, scanActions } from "@/store/scanSlice";
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, ink } from "@/theme/colors";
 import type { Copy, Release, WishlistItem } from "@janne6565/rekordo-shared";
 import {
   FORMAT_LABELS,
@@ -85,7 +85,7 @@ export function SavedScreen() {
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.tick}>
-          <Check size={26} color="#ffffff" strokeWidth={2} />
+          <Check size={26} color={colors.onInk} strokeWidth={2} />
         </View>
 
         <Text style={styles.title}>
@@ -193,7 +193,7 @@ function SavedRow({
     <View style={styles.row}>
       {release === undefined ? (
         <View style={styles.pending}>
-          <Disc3 size={18} color="rgba(25,23,19,0.3)" strokeWidth={1.6} />
+          <Disc3 size={18} color={ink(0.3)} strokeWidth={1.6} />
         </View>
       ) : (
         <ReleaseArt release={release} format={release.format} style={styles.art} />
@@ -344,21 +344,21 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(25,23,19,0.08)",
+    borderBottomColor: ink(0.08),
   },
   art: { width: 53, height: 44 },
   pending: {
     width: 44,
     height: 44,
     borderRadius: 6,
-    backgroundColor: "#eae6de",
+    backgroundColor: colors.well,
     alignItems: "center",
     justifyContent: "center",
   },
   rowText: { flex: 1, minWidth: 0 },
   rowTitle: { fontFamily: fonts.sans, fontSize: 13, fontWeight: "600", color: colors.ink },
   rowDigits: { fontFamily: MONO, fontSize: 12, color: colors.ink },
-  rowMeta: { fontFamily: fonts.sans, fontSize: 11.5, color: "rgba(25,23,19,0.5)", marginTop: 2 },
+  rowMeta: { fontFamily: fonts.sans, fontSize: 11.5, color: ink(0.5), marginTop: 2 },
   tag: { flexDirection: "row", alignItems: "center", gap: 5 },
   tagText: { fontFamily: MONO, fontSize: 10, color: colors.accentStrong },
   tagTextWished: { color: colors.accent },
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  detailsText: { fontFamily: fonts.sans, fontSize: 14.5, fontWeight: "600", color: "#ffffff" },
+  detailsText: { fontFamily: fonts.sans, fontSize: 14.5, fontWeight: "600", color: colors.onInk },
 
   footer: {
     flexDirection: "row",
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: "rgba(25,23,19,0.09)",
+    borderTopColor: colors.line,
     backgroundColor: colors.surface,
   },
   undo: { fontFamily: fonts.sans, fontSize: 13.5, fontWeight: "500", color: colors.accent },
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.16)",
+    borderColor: ink(0.16),
     alignItems: "center",
     justifyContent: "center",
   },

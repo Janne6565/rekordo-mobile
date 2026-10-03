@@ -1,4 +1,4 @@
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, ink } from "@/theme/colors";
 import { useEffect, useRef, useState } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     padding: PAD,
     borderRadius: 9,
-    backgroundColor: "rgba(25,23,19,0.06)",
+    backgroundColor: ink(0.06),
   },
   thumb: {
     position: "absolute",
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     bottom: PAD,
     borderRadius: 7,
     backgroundColor: colors.surface,
-    shadowColor: "rgba(25,23,19,1)",
+    shadowColor: colors.shadow,
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 1 },
     shadowRadius: 2,

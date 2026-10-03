@@ -5,9 +5,10 @@ import { RemoveWishSheet } from "@/features/wishlist/RemoveWishSheet";
 import { WishSheet } from "@/features/wishlist/WishSheet";
 import { useWishCoverLogic } from "@/features/wishlist/useWishCoverLogic";
 import { useWishEntryLogic } from "@/features/wishlist/useWishlistLogic";
+import { appChromeFor } from "@/theme/chrome";
 import { colors, fonts } from "@/theme/colors";
 import type { WishFormat } from "@janne6565/rekordo-shared";
-import { FORMAT_LABELS, asWishFormat, chromeFor } from "@janne6565/rekordo-shared";
+import { FORMAT_LABELS, asWishFormat } from "@janne6565/rekordo-shared";
 import { useRouter } from "expo-router";
 import {
   Camera,
@@ -278,7 +279,7 @@ function Header({ onBack }: { readonly onBack: () => void }) {
 
 /* The wishlist screen is paper throughout — it never takes a sleeve's palette the way the
    library's detail screen does, because a wish has no copy to sample. */
-const PAPER = chromeFor(null);
+const PAPER = appChromeFor(null);
 
 const styles = StyleSheet.create({
   tracklist: { paddingHorizontal: 20 },

@@ -3,7 +3,7 @@ import { RisingSheet } from "@/components/RisingSheet";
 import { RollWheel } from "@/features/roll/RollWheel";
 import { useRollRows } from "@/features/roll/useRollRows";
 import { curve, useCross, useReducedMotion } from "@/lib/motion";
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, ink } from "@/theme/colors";
 import type { Format, RollLogic, RollRow } from "@janne6565/rekordo-shared";
 import {
   CONDITION_LABELS,
@@ -565,13 +565,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
-    shadowColor: colors.ink,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.2,
     shadowRadius: 30,
     shadowOffset: { width: 0, height: -8 },
   },
   grabRow: { paddingTop: 12, paddingBottom: 16, alignItems: "center" },
-  grabber: { width: 36, height: 4, borderRadius: 999, backgroundColor: "rgba(25,23,19,0.16)" },
+  grabber: { width: 36, height: 4, borderRadius: 999, backgroundColor: ink(0.16) },
   pad: { paddingHorizontal: PAD, paddingBottom: 14 },
   title: { fontFamily: fonts.serif, fontSize: 22, lineHeight: 25, color: colors.ink },
   lede: { fontSize: 12, lineHeight: 18, color: colors.inkMuted, marginTop: 5 },
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     color: colors.inkSubtle,
   },
-  eyebrowQuiet: { fontSize: 10, color: "rgba(25,23,19,0.35)" },
+  eyebrowQuiet: { fontSize: 10, color: ink(0.35) },
 
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 6, paddingTop: 14 },
   chip: {
@@ -590,7 +590,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(25,23,19,0.14)",
+    borderColor: ink(0.14),
   },
   chipOn: { backgroundColor: colors.ink, borderColor: colors.ink },
   chipText: { fontSize: 12, fontWeight: "600", color: colors.inkMuted },
@@ -618,14 +618,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 9,
   },
-  primaryOff: { backgroundColor: "rgba(25,23,19,0.14)" },
+  primaryOff: { backgroundColor: ink(0.14) },
   primaryText: { fontSize: 15, fontWeight: "600", color: colors.paper },
   primaryTextOff: { color: colors.inkSubtle },
   secondary: {
     height: 44,
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(25,23,19,0.16)",
+    borderColor: ink(0.16),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -657,11 +657,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1,
     textTransform: "uppercase",
-    color: "rgba(25,23,19,0.38)",
+    color: ink(0.38),
   },
   footValue: { flex: 1, fontSize: 11, fontWeight: "500", color: colors.inkMuted },
   edit: { flexDirection: "row", alignItems: "center", gap: 5 },
   editText: { fontSize: 11.5, fontWeight: "600", color: colors.accent },
   passedRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 },
-  passed: { flex: 1, fontSize: 11, fontWeight: "500", color: "rgba(25,23,19,0.45)" },
+  passed: { flex: 1, fontSize: 11, fontWeight: "500", color: ink(0.45) },
 });

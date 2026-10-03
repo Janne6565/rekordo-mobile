@@ -1,6 +1,6 @@
 import { ReleaseArt } from "@/components/ReleaseArt";
 import { type RemoveRow, RemoveSheet } from "@/components/RemoveSheet";
-import { colors } from "@/theme/colors";
+import { colors, ink } from "@/theme/colors";
 import type { Copy, Photo, Release } from "@janne6565/rekordo-shared";
 import { CONDITION_SHORT, FORMAT_LABELS, copyFormat } from "@janne6565/rekordo-shared";
 import { Star, Trash2 } from "lucide-react-native";
@@ -175,5 +175,5 @@ const styles = StyleSheet.create({
   art: { width: 72, height: 60 },
   stars: { flexDirection: "row", gap: 2 },
   thumbs: { flexDirection: "row", gap: 5, marginVertical: -2 },
-  thumb: { width: 30, height: 30, borderRadius: 4, backgroundColor: "#e7e2d7" },
+  thumb: { width: 30, height: 30, borderRadius: 4, backgroundColor: ink(0.08) },
 });

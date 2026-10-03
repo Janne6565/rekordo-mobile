@@ -1,7 +1,7 @@
 import { RatingFloor } from "@/components/RatingFloor";
 import { RisingSheet } from "@/components/RisingSheet";
 import type { FormatFilter, LibraryLogic } from "@/features/library/useLibraryLogic";
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, ink } from "@/theme/colors";
 import type { Format } from "@janne6565/rekordo-shared";
 import { FORMAT_LABELS } from "@janne6565/rekordo-shared";
 import { useTranslation } from "react-i18next";
@@ -121,13 +121,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
-    shadowColor: colors.ink,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.2,
     shadowRadius: 30,
     shadowOffset: { width: 0, height: -8 },
   },
   grabRow: { paddingTop: 12, paddingBottom: 16, alignItems: "center" },
-  grabber: { width: 36, height: 4, borderRadius: 999, backgroundColor: "rgba(25,23,19,0.16)" },
+  grabber: { width: 36, height: 4, borderRadius: 999, backgroundColor: ink(0.16) },
   pad: { paddingHorizontal: 20, paddingBottom: 14 },
 
   head: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" },
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(25,23,19,0.14)",
+    borderColor: ink(0.14),
   },
   chipOn: { backgroundColor: colors.ink, borderColor: colors.ink },
   chipText: { fontSize: 12.5, fontWeight: "600", color: colors.inkMuted },

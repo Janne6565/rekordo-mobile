@@ -230,7 +230,7 @@ export function NotificationsScreen() {
                       <Switch
                         value={row.mail}
                         onValueChange={(on) => set(category, "mail", on)}
-                        trackColor={{ true: colors.ink, false: colors.line }}
+                        trackColor={{ true: colors.switchOn, false: colors.line }}
                       />
                     )}
                   </View>
@@ -241,7 +241,7 @@ export function NotificationsScreen() {
                         value={row.push}
                         onValueChange={(on) => set(category, "push", on)}
                         disabled={asking}
-                        trackColor={{ true: colors.ink, false: colors.line }}
+                        trackColor={{ true: colors.switchOn, false: colors.line }}
                       />
                     ) : pushBlocked ? (
                       // Greyed, not blank, and still showing what was chosen: if push is ever
@@ -250,7 +250,7 @@ export function NotificationsScreen() {
                         value={row.push}
                         disabled
                         style={styles.greyed}
-                        trackColor={{ true: colors.ink, false: colors.line }}
+                        trackColor={{ true: colors.switchOn, false: colors.line }}
                       />
                     ) : (
                       <Text style={styles.dash}>—</Text>
@@ -300,7 +300,7 @@ export function NotificationsScreen() {
                 <Switch
                   value={device.mutedAt === null}
                   onValueChange={(on) => mute.mutate({ id: device.id, muted: !on })}
-                  trackColor={{ true: colors.ink, false: colors.line }}
+                  trackColor={{ true: colors.switchOn, false: colors.line }}
                 />
               </View>
             ))

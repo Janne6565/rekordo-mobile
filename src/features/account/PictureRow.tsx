@@ -1,7 +1,7 @@
 import { FramingScreen } from "@/features/account/FramingScreen";
 import type { ProfilePictureLogic } from "@/features/account/useProfilePictureLogic";
 import { Avatar } from "@/features/friends/Avatar";
-import { colors, fonts } from "@/theme/colors";
+import { accent, colors, fonts, ink, isDark } from "@/theme/colors";
 import { ChevronRight } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
@@ -209,7 +209,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
   },
-  rowFailed: { borderWidth: 1, borderColor: "rgba(162,87,58,0.35)", borderRadius: 12 },
+  rowFailed: {
+    borderWidth: 1,
+    borderColor: accent(0.35),
+    borderRadius: 12,
+  },
   text: { flex: 1, minWidth: 0 },
   title: { fontFamily: fonts.sans, fontSize: 13.5, fontWeight: "600", color: colors.ink },
   body: { fontFamily: fonts.sans, fontSize: 11.5, color: colors.inkMuted, marginTop: 2 },
@@ -221,7 +225,7 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 999,
     overflow: "hidden",
-    backgroundColor: "rgba(25,23,19,0.12)",
+    backgroundColor: ink(0.12),
   },
   progressTrack: { ...StyleSheet.absoluteFill },
   progressFill: {
@@ -235,13 +239,17 @@ const styles = StyleSheet.create({
 
   scrim: { flex: 1, backgroundColor: "rgba(25,23,19,0.34)", justifyContent: "flex-end" },
   sheetArea: { padding: 10, paddingBottom: 12 },
-  sheet: { backgroundColor: "rgba(250,248,245,0.97)", borderRadius: 16, overflow: "hidden" },
+  sheet: {
+    backgroundColor: isDark ? "rgba(20,19,17,0.97)" : "rgba(250,248,245,0.97)",
+    borderRadius: 16,
+    overflow: "hidden",
+  },
   sheetHead: {
     paddingVertical: 12,
     paddingHorizontal: 16,
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(25,23,19,0.08)",
+    borderBottomColor: ink(0.08),
   },
   sheetHeadText: {
     fontFamily: fonts.sans,
@@ -253,7 +261,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(25,23,19,0.08)",
+    borderBottomColor: ink(0.08),
   },
   sheetRowLast: { borderBottomWidth: 0 },
   sheetRowText: { fontFamily: fonts.sans, fontSize: 15, fontWeight: "600", color: colors.ink },

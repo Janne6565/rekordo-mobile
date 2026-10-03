@@ -1,4 +1,4 @@
-import { colors } from "@/theme/colors";
+import { colors, ink } from "@/theme/colors";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -65,10 +65,10 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1,
     textTransform: "uppercase",
-    color: "rgba(25,23,19,0.38)",
+    color: ink(0.38),
   },
   stars: { flexDirection: "row", alignItems: "center", gap: 4, marginLeft: "auto" },
-  star: { fontSize: 19, lineHeight: 22, color: "rgba(25,23,19,0.18)" },
+  star: { fontSize: 19, lineHeight: 22, color: ink(0.18) },
   starOn: { color: colors.accent },
   value: { fontSize: 11, fontWeight: "500", color: colors.inkSubtle },
 });

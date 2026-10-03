@@ -1,5 +1,5 @@
 import { useHandleClaimLogic } from "@/features/friends/useSharingLogic";
-import { colors, fonts } from "@/theme/colors";
+import { accent, accentStrong, colors, fonts } from "@/theme/colors";
 import { Check, Users } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(162,87,58,0.1)",
+    backgroundColor: accent(0.1),
     marginBottom: 16,
   },
   title: { fontFamily: fonts.serif, fontSize: 22, color: colors.ink },
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     backgroundColor: colors.surface,
   },
-  fieldBad: { borderColor: "rgba(140,69,48,0.45)" },
+  fieldBad: { borderColor: accentStrong(0.45) },
   at: { fontFamily: fonts.sans, fontSize: 16, color: colors.inkSubtle },
   input: { flex: 1, fontFamily: fonts.sans, fontSize: 16, color: colors.ink, padding: 0 },
   hint: {

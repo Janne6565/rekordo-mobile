@@ -1,4 +1,5 @@
 import { useReducedMotion } from "@/lib/motion";
+import { ink } from "@/theme/colors";
 import { useEffect, useRef } from "react";
 import { Animated, Easing, type ViewStyle } from "react-native";
 
@@ -17,9 +18,9 @@ export type SkeletonTone = "strong" | "soft" | "faint";
  * The weights are the deck's, kept as they were; only the colour they are mixed from moved.
  */
 const TONES: Record<SkeletonTone, string> = {
-  strong: "rgba(25,23,19,0.10)",
-  soft: "rgba(25,23,19,0.075)",
-  faint: "rgba(25,23,19,0.055)",
+  strong: ink(0.1),
+  soft: ink(0.075),
+  faint: ink(0.055),
 };
 
 /**

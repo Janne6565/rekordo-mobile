@@ -1,5 +1,5 @@
 import { API_BASE } from "@/api/config";
-import { fonts } from "@/theme/colors";
+import { colors, fonts, ink, isDark } from "@/theme/colors";
 import { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 
@@ -55,8 +55,9 @@ export function Avatar({
           height: size,
           borderRadius: size / 2,
           // Low saturation, high lightness: these sit beside cover art, and a wall of vivid
-          // circles would compete with the sleeves.
-          backgroundColor: `hsl(${hue}, 32%, 86%)`,
+          // circles would compete with the sleeves. In dark the tint drops in lightness so
+          // the (now light) initials stay readable.
+          backgroundColor: isDark ? `hsl(${hue}, 22%, 30%)` : `hsl(${hue}, 32%, 86%)`,
         },
       ]}
     >
@@ -85,7 +86,7 @@ export function Avatar({
           styles.ring,
           {
             borderRadius: size / 2,
-            borderColor: shown === null ? "rgba(25,23,19,0.08)" : "rgba(25,23,19,0.12)",
+            borderColor: shown === null ? ink(0.08) : ink(0.12),
           },
         ]}
       />
@@ -104,6 +105,6 @@ export function absolute(uri: string | null | undefined): string | null {
 
 const styles = StyleSheet.create({
   circle: { alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  initials: { fontFamily: fonts.sans, fontWeight: "600", color: "rgba(25,23,19,0.7)" },
+  initials: { fontFamily: fonts.sans, fontWeight: "600", color: isDark ? colors.ink : ink(0.7) },
   ring: { borderWidth: 1 },
 });

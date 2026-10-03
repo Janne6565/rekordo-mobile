@@ -1,7 +1,7 @@
 import { KeyboardLift } from "@/components/KeyboardLift";
 import { RisingSheet, useSheetBottom } from "@/components/RisingSheet";
 import { isDeletionConfirmed } from "@/features/legal/confirmDeletion";
-import { colors, fonts } from "@/theme/colors";
+import { accentStrong, colors, fonts, ink } from "@/theme/colors";
 import { Download } from "lucide-react-native";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "rgba(25,23,19,0.16)",
+    backgroundColor: ink(0.16),
     alignSelf: "center",
     marginBottom: 18,
   },
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.12)",
+    borderColor: ink(0.12),
   },
   exportLabel: { flex: 1, fontSize: 12.5, fontWeight: "500", color: colors.ink },
   exportAction: { fontSize: 11.5, fontWeight: "600", color: colors.accent },
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  confirmDim: { backgroundColor: "rgba(140,69,48,0.25)" },
+  confirmDim: { backgroundColor: accentStrong(0.25) },
   confirmText: { fontSize: 15, fontWeight: "600", color: colors.paper },
   keep: { marginTop: 16, alignItems: "center" },
   keepText: { fontSize: 13, fontWeight: "600", color: colors.inkMuted },

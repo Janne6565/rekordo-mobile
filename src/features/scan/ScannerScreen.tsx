@@ -3,7 +3,7 @@ import { SessionBar } from "@/features/scan/SessionBar";
 import { TrayRow } from "@/features/scan/TrayRow";
 import { type ScanCard, useScannerLogic } from "@/features/scan/useScannerLogic";
 import { type KeptScan, scanNaming } from "@/store/scanSlice";
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, ink, onInk } from "@/theme/colors";
 import { formatBarcode } from "@janne6565/rekordo-shared";
 import { CameraView } from "expo-camera";
 import {
@@ -206,7 +206,7 @@ function KeptNote({ scan, onUndo }: { readonly scan: KeptScan; readonly onUndo: 
   return (
     <View style={styles.noteWrap}>
       <View style={styles.note}>
-        <Icon size={14} color="#ffffff" strokeWidth={1.9} />
+        <Icon size={14} color={colors.onInk} strokeWidth={1.9} />
         <Text style={styles.noteText} numberOfLines={1}>
           {wished
             ? t("scan.onTheWishlist", { title })
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.1)",
+    borderColor: ink(0.1),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -449,17 +449,17 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontSize: 12.5,
     fontWeight: "500",
-    color: "#ffffff",
+    color: colors.onInk,
   },
   noteUndo: {
     height: 28,
     paddingHorizontal: 12,
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.14)",
+    backgroundColor: onInk(0.14),
     alignItems: "center",
     justifyContent: "center",
   },
-  noteUndoText: { fontFamily: fonts.sans, fontSize: 12.5, fontWeight: "600", color: "#ffffff" },
+  noteUndoText: { fontFamily: fonts.sans, fontSize: 12.5, fontWeight: "600", color: colors.onInk },
 
   permission: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32, gap: 12 },
   permissionTitle: {
@@ -484,6 +484,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: 8,
   },
-  primaryText: { fontFamily: fonts.sans, fontSize: 15, fontWeight: "600", color: "#ffffff" },
+  primaryText: { fontFamily: fonts.sans, fontSize: 15, fontWeight: "600", color: colors.onInk },
   quiet: { fontFamily: fonts.sans, fontSize: 13, fontWeight: "500", color: colors.accent },
 });

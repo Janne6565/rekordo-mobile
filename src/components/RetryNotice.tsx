@@ -1,4 +1,4 @@
-import { colors } from "@/theme/colors";
+import { colors, ink } from "@/theme/colors";
 import { RotateCw } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.14)",
+    borderColor: ink(0.14),
   },
   buttonOff: { opacity: 0.5 },
   buttonText: { fontSize: 12.5, fontWeight: "600", color: colors.ink },

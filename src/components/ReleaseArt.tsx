@@ -1,6 +1,7 @@
 import { CoverPlaceholder } from "@/components/CoverPlaceholder";
 import { FormatThumb } from "@/components/FormatThumb";
 import { usePulse } from "@/components/Skeleton";
+import { colors } from "@/theme/colors";
 import type { Format } from "@janne6565/rekordo-shared";
 import { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, View, type ViewStyle } from "react-native";
@@ -289,5 +290,5 @@ const styles = StyleSheet.create({
   frame: { width: "100%", overflow: "hidden" },
   /** Square, and definite, so the hero has a height with or without a silhouette in it. */
   bleed: { aspectRatio: 1 },
-  ground: { backgroundColor: "#efece6" },
+  ground: { backgroundColor: colors.canvas },
 });

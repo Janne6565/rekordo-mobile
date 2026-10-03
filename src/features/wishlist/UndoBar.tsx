@@ -1,5 +1,5 @@
 import { useStore } from "@/local/StoreProvider";
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, isDark, onInk } from "@/theme/colors";
 import { UNDO_HOLD, restoreWishlistItem } from "@janne6565/rekordo-shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { HeartOff, Trash2 } from "lucide-react-native";
@@ -113,7 +113,7 @@ function RemovalLine({
   return (
     <View style={styles.bar} accessibilityLiveRegion="polite" pointerEvents="box-none">
       <View style={[styles.card, styles.removalCard]}>
-        <Icon size={17} color="rgba(255,255,255,0.6)" strokeWidth={1.75} />
+        <Icon size={17} color={onInk(0.6)} strokeWidth={1.75} />
         <View style={styles.body}>
           <Text style={styles.title}>{removal.title}</Text>
           <Text style={styles.removalLine} numberOfLines={1}>
@@ -155,7 +155,7 @@ function UndoLine({ undo, onDone }: { readonly undo: WishUndo; readonly onDone: 
   return (
     <View style={styles.bar} accessibilityLiveRegion="polite" pointerEvents="box-none">
       <View style={styles.card}>
-        <HeartOff size={16} color={colors.nightMuted} strokeWidth={1.75} />
+        <HeartOff size={16} color={colors.onInkMuted} strokeWidth={1.75} />
         <View style={styles.body}>
           <Text style={styles.title}>{t("undo.wishSatisfied")}</Text>
           <Text style={styles.since} numberOfLines={1}>
@@ -171,7 +171,7 @@ function UndoLine({ undo, onDone }: { readonly undo: WishUndo; readonly onDone: 
 }
 
 /** The deck's Undo on the ink bar: the accent lifted until it reads on near-black. */
-const UNDO_INK = "#e0b79f";
+const UNDO_INK = isDark ? "#8c4530" : "#e0b79f";
 
 const styles = StyleSheet.create({
   bar: { position: "absolute", left: 0, right: 0, bottom: 96, paddingHorizontal: 18 },
@@ -185,20 +185,20 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   body: { flex: 1, minWidth: 0 },
-  title: { fontFamily: fonts.sans, fontSize: 13, fontWeight: "600", color: colors.nightInk },
-  since: { fontFamily: fonts.sans, fontSize: 11.5, color: colors.nightMuted, marginTop: 1 },
+  title: { fontFamily: fonts.sans, fontSize: 13, fontWeight: "600", color: colors.onInk },
+  since: { fontFamily: fonts.sans, fontSize: 11.5, color: colors.onInkMuted, marginTop: 1 },
   action: {
     borderRadius: 8,
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: onInk(0.15),
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  actionText: { fontFamily: fonts.sans, fontSize: 12, fontWeight: "600", color: colors.nightInk },
+  actionText: { fontFamily: fonts.sans, fontSize: 12, fontWeight: "600", color: colors.onInk },
   removalCard: {
     borderRadius: 13,
     paddingHorizontal: 15,
     paddingVertical: 13,
-    shadowColor: colors.ink,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.24,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 8 },
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   removalLine: {
     fontFamily: fonts.sans,
     fontSize: 11.5,
-    color: colors.nightMuted,
+    color: colors.onInkMuted,
     marginTop: 2,
   },
   undo: { paddingVertical: 8, paddingLeft: 8 },

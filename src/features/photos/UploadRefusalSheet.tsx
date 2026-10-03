@@ -3,7 +3,7 @@ import { RisingSheet, useSheetBottom } from "@/components/RisingSheet";
 import { formatMegabytes } from "@/features/account/storageReading";
 import { useStore } from "@/local/StoreProvider";
 import { markRefusalSeen, readUploadRefusal } from "@/local/uploadRefusal";
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, ink } from "@/theme/colors";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 999,
-    backgroundColor: "rgba(25,23,19,0.16)",
+    backgroundColor: ink(0.16),
     alignSelf: "center",
   },
   title: {

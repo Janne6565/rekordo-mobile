@@ -1,7 +1,7 @@
 import { ReleaseArt } from "@/components/ReleaseArt";
 import { EXAMPLE_RELEASES } from "@/features/add/exampleReleases";
 import type { ExampleRelease } from "@/features/add/types";
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, ink } from "@/theme/colors";
 import { Search } from "lucide-react-native";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.12)",
+    borderColor: ink(0.12),
   },
   opening: {
     position: "absolute",
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingTop: 11,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(25,23,19,0.09)",
+    borderTopColor: colors.line,
     fontSize: 11,
     lineHeight: 16,
     color: colors.inkMuted,

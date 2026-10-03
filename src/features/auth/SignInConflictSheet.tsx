@@ -3,7 +3,7 @@ import { RisingSheet } from "@/components/RisingSheet";
 import { conflictDate, conflictValueText } from "@/features/auth/conflictValues";
 import { useSignInConflictLogic } from "@/features/auth/useSignInConflictLogic";
 import { useAppSelector } from "@/store/hooks";
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, ink, onInk } from "@/theme/colors";
 import type { OneSidedEntry, ValueDifference } from "@janne6565/rekordo-shared";
 import { differenceKey } from "@janne6565/rekordo-shared";
 import {
@@ -891,7 +891,7 @@ const styles = StyleSheet.create({
   track: {
     height: 4,
     borderRadius: 999,
-    backgroundColor: "rgba(25,23,19,0.09)",
+    backgroundColor: colors.line,
     marginTop: 14,
     overflow: "hidden",
   },
@@ -918,7 +918,7 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   primaryText: { color: colors.paper, fontSize: 14, fontWeight: "600" },
-  primaryCount: { color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "500" },
+  primaryCount: { color: colors.onInkMuted, fontSize: 11, fontWeight: "500" },
   dim: { opacity: 0.5 },
   quiet: { fontSize: 12.5, fontWeight: "600", color: colors.inkMuted },
   quietAccent: { color: colors.accent },
@@ -967,7 +967,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   tableHead: {
-    backgroundColor: "rgba(25,23,19,0.03)",
+    backgroundColor: ink(0.03),
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.line,
   },
@@ -996,7 +996,7 @@ const styles = StyleSheet.create({
     gap: 9,
     paddingHorizontal: 14,
     paddingVertical: 11,
-    backgroundColor: "rgba(25,23,19,0.03)",
+    backgroundColor: ink(0.03),
   },
   photoText: { flex: 1, fontSize: 11, lineHeight: 17, color: colors.inkSubtle },
   spread: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
@@ -1011,7 +1011,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 11,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(25,23,19,0.16)",
+    borderColor: ink(0.16),
   },
   seeMoreText: { fontSize: 12.5, fontWeight: "600", color: colors.accent },
   seeMoreCount: { fontSize: 11, fontWeight: "500", color: colors.inkSubtle },
@@ -1030,14 +1030,14 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
   },
   keepBothTitle: { fontSize: 14.5, fontWeight: "600", color: colors.paper },
-  keepBothCount: { fontSize: 11, fontWeight: "500", color: "rgba(255,255,255,0.6)" },
-  keepBothBody: { fontSize: 11.5, lineHeight: 17, color: "rgba(255,255,255,0.6)", marginTop: 3 },
+  keepBothCount: { fontSize: 11, fontWeight: "500", color: onInk(0.6) },
+  keepBothBody: { fontSize: 11.5, lineHeight: 17, color: onInk(0.6), marginTop: 3 },
   keepPair: { flexDirection: "row", gap: 9, marginTop: 9 },
   keepCard: {
     flex: 1,
     borderRadius: 11,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(25,23,19,0.16)",
+    borderColor: ink(0.16),
     paddingHorizontal: 13,
     paddingVertical: 11,
   },
@@ -1052,7 +1052,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: "rgba(25,23,19,0.05)",
+    backgroundColor: ink(0.05),
   },
   exportText: { flex: 1, fontSize: 11.5, lineHeight: 17, color: colors.inkMuted },
 
@@ -1110,7 +1110,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.line,
-    backgroundColor: "rgba(25,23,19,0.07)",
+    backgroundColor: ink(0.07),
     gap: StyleSheet.hairlineWidth,
   },
   cardStack: { gap: 8 },
@@ -1140,7 +1140,7 @@ const styles = StyleSheet.create({
     marginTop: 9,
     borderRadius: 8,
     overflow: "hidden",
-    backgroundColor: "rgba(25,23,19,0.08)",
+    backgroundColor: ink(0.08),
     gap: StyleSheet.hairlineWidth,
   },
   sideLine: {
@@ -1168,9 +1168,9 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     paddingHorizontal: 10,
     paddingVertical: 9,
-    backgroundColor: "rgba(25,23,19,0.04)",
+    backgroundColor: ink(0.04),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(25,23,19,0.10)",
+    borderColor: ink(0.1),
   },
   pickChosen: { backgroundColor: colors.ink, borderColor: colors.ink },
   pickLabel: {
@@ -1180,7 +1180,7 @@ const styles = StyleSheet.create({
     color: colors.inkSubtle,
     fontWeight: "500",
   },
-  pickLabelChosen: { color: "rgba(255,255,255,0.65)" },
+  pickLabelChosen: { color: onInk(0.65) },
   pickValue: { fontSize: 11.5, lineHeight: 16, color: colors.ink, marginTop: 4 },
   pickValueChosen: { color: colors.paper },
 
@@ -1188,7 +1188,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     padding: 2,
     borderRadius: 8,
-    backgroundColor: "rgba(25,23,19,0.07)",
+    backgroundColor: ink(0.07),
   },
   segment: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 6 },
   segmentActive: { backgroundColor: colors.ink },

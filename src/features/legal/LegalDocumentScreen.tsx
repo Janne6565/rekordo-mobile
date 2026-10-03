@@ -1,5 +1,5 @@
 import { useLegalLanguage } from "@/features/legal/useLegalLanguage";
-import { colors, fonts } from "@/theme/colors";
+import { accent, colors, fonts, ink } from "@/theme/colors";
 import {
   BINDING_LANGUAGE,
   type LegalDocument,
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     gap: 4,
     padding: 3,
     borderRadius: 8,
-    backgroundColor: "rgba(25,23,19,0.06)",
+    backgroundColor: ink(0.06),
   },
   switchOption: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   switchOptionOn: { backgroundColor: colors.surface },
@@ -222,27 +222,27 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     padding: 13,
     borderRadius: 11,
-    backgroundColor: "rgba(25,23,19,0.05)",
+    backgroundColor: ink(0.05),
   },
   translationText: { flex: 1, fontSize: 11.5, lineHeight: 18, color: colors.inkMuted },
   summary: {
     marginTop: 14,
     padding: 13,
     borderRadius: 11,
-    backgroundColor: "rgba(162,87,58,0.07)",
+    backgroundColor: accent(0.07),
   },
-  summaryText: { fontSize: 12, lineHeight: 19, color: "rgba(25,23,19,0.7)" },
+  summaryText: { fontSize: 12, lineHeight: 19, color: ink(0.7) },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 14 },
   chip: {
     paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.14)",
+    borderColor: ink(0.14),
   },
   chipText: { fontSize: 10.5, fontWeight: "500", color: colors.inkMuted },
   sectionHeading: { fontFamily: fonts.serif, fontSize: 17, color: colors.ink, marginTop: 20 },
-  paragraph: { fontSize: 13, lineHeight: 22, color: "rgba(25,23,19,0.75)", marginTop: 7 },
+  paragraph: { fontSize: 13, lineHeight: 22, color: ink(0.75), marginTop: 7 },
   closing: {
     marginTop: 20,
     padding: 13,
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
   },
-  closingText: { fontSize: 12, lineHeight: 19, color: "rgba(25,23,19,0.65)" },
+  closingText: { fontSize: 12, lineHeight: 19, color: ink(0.65) },
   footer: { marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.line },
   footerText: { fontSize: 11.5, color: colors.inkSubtle },
   missing: { margin: 20, fontSize: 13, color: colors.inkMuted },

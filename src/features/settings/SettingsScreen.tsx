@@ -3,7 +3,7 @@ import { CURRENCIES, type CurrencyCode, currencyChipLabel } from "@/domain/curre
 import { formatRelativeTime } from "@/domain/relativeTime";
 import { useSettingsLogic } from "@/features/settings/useSettingsLogic";
 import type { AppLanguage } from "@/local/settings";
-import { colors, fonts } from "@/theme/colors";
+import { accent, colors, fonts } from "@/theme/colors";
 import { useRouter } from "expo-router";
 import { Check, ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useState } from "react";
@@ -128,7 +128,7 @@ export function SettingsScreen() {
               <Switch
                 value={values?.syncEnabled ?? true}
                 onValueChange={logic.setSyncEnabled}
-                trackColor={{ true: colors.ink, false: colors.line }}
+                trackColor={{ true: colors.switchOn, false: colors.line }}
               />
             ) : (
               <Pressable
@@ -151,7 +151,7 @@ export function SettingsScreen() {
             <Switch
               value
               disabled
-              trackColor={{ true: colors.ink, false: colors.line }}
+              trackColor={{ true: colors.switchOn, false: colors.line }}
               accessibilityLabel={`${t("settings.local.title")}, ${t("settings.local.always")}`}
             />
           </View>
@@ -412,9 +412,9 @@ const styles = StyleSheet.create({
   failure: {
     paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: "rgba(162,87,58,0.06)",
+    backgroundColor: accent(0.06),
     borderTopWidth: 1,
-    borderTopColor: "rgba(162,87,58,0.18)",
+    borderTopColor: accent(0.18),
   },
   failureText: {
     fontFamily: fonts.sans,
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "rgba(162,87,58,0.35)",
+    borderColor: accent(0.35),
     alignItems: "center",
     justifyContent: "center",
   },

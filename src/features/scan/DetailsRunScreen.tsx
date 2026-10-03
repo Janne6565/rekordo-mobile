@@ -2,6 +2,7 @@ import { ReleaseArt } from "@/components/ReleaseArt";
 import { InlineCopyEditor } from "@/features/detail/CopyEditor";
 import { useStore } from "@/local/StoreProvider";
 import { useAppSelector } from "@/store/hooks";
+import { appChromeFor } from "@/theme/chrome";
 import { colors, fonts } from "@/theme/colors";
 import type { Copy, CopyPatch, Release } from "@janne6565/rekordo-shared";
 import {
@@ -9,7 +10,6 @@ import {
   applyCopyPatch,
   catalogueKeyOf,
   catalogueKeysOf,
-  chromeFor,
   copyFormat,
 } from "@janne6565/rekordo-shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -134,7 +134,7 @@ export function DetailsRunScreen() {
           key={copy.id}
           copy={copy}
           catalogFormat={release?.format}
-          chrome={chromeFor(null)}
+          chrome={appChromeFor(null)}
           saving={save.isPending}
           onSave={(patch) => save.mutate({ copy, patch })}
           onCancel={next}
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(25,23,19,0.09)",
+    borderBottomColor: colors.line,
   },
   position: {
     fontFamily: MONO,

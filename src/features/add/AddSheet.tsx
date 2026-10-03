@@ -2,7 +2,7 @@ import { releaseDisambiguation } from "@/api/releases";
 import { ReleaseArt } from "@/components/ReleaseArt";
 import { RisingSheet, useSheetBottom } from "@/components/RisingSheet";
 import { type AddDestination, useAddSheetLogic } from "@/features/add/useAddSheetLogic";
-import { colors, fonts } from "@/theme/colors";
+import { accent, colors, fonts, ink } from "@/theme/colors";
 import type { Format, Release } from "@janne6565/rekordo-shared";
 import { FORMAT_LABELS } from "@janne6565/rekordo-shared";
 import { Check, ChevronRight, Heart, LibraryBig } from "lucide-react-native";
@@ -216,7 +216,7 @@ export function AddSheet({
                 disabled={logic.saving}
                 style={[styles.primary, logic.saving && styles.primaryOff]}
               >
-                <Check size={17} color="#ffffff" strokeWidth={2.2} />
+                <Check size={17} color={colors.onInk} strokeWidth={2.2} />
                 <Text style={styles.primaryText}>
                   {shelf ? t("addSheet.addToShelf") : t("addSheet.addToWishlist")}
                 </Text>
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.09)",
+    borderColor: colors.line,
     borderBottomWidth: 0,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 4,
     borderRadius: 999,
-    backgroundColor: "rgba(25,23,19,0.16)",
+    backgroundColor: ink(0.16),
     alignSelf: "center",
     marginBottom: 16,
   },
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   pressingPickable: { borderColor: colors.accent },
   pressingPick: { flexDirection: "row", alignItems: "center", gap: 4 },
   pressingOnly: { fontSize: 11, color: colors.inkSubtle, maxWidth: 92, textAlign: "right" },
-  pressingRow: { borderWidth: 1, borderColor: "rgba(25,23,19,0.1)", marginBottom: 8 },
+  pressingRow: { borderWidth: 1, borderColor: ink(0.1), marginBottom: 8 },
   pressingOn: { borderWidth: 1.5, borderColor: colors.ink },
   pressingArt: { width: 60, height: 50 },
   pressingTitleRow: { flexDirection: "row", alignItems: "center", gap: 7 },
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     paddingHorizontal: 6,
     borderRadius: 4,
-    backgroundColor: "rgba(162,87,58,0.14)",
+    backgroundColor: accent(0.14),
   },
   guessText: {
     fontFamily: MONO,
@@ -378,11 +378,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.12)",
+    borderColor: ink(0.12),
   },
   chipOn: { backgroundColor: colors.ink, borderColor: colors.ink },
   chipText: { fontFamily: fonts.sans, fontSize: 12, fontWeight: "500", color: colors.inkMuted },
-  chipTextOn: { color: "#ffffff", fontWeight: "600" },
+  chipTextOn: { color: colors.onInk, fontWeight: "600" },
 
   primary: {
     height: 52,
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   primaryOff: { opacity: 0.5 },
-  primaryText: { fontFamily: fonts.sans, fontSize: 14.5, fontWeight: "600", color: "#ffffff" },
+  primaryText: { fontFamily: fonts.sans, fontSize: 14.5, fontWeight: "600", color: colors.onInk },
   flip: {
     fontFamily: fonts.sans,
     fontSize: 12.5,

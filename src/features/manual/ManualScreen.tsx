@@ -1,7 +1,7 @@
 import { KeyboardLift } from "@/components/KeyboardLift";
 import { CHOOSABLE_FORMATS } from "@/domain/formats";
 import { useManualEntryLogic } from "@/features/manual/useManualEntryLogic";
-import { colors } from "@/theme/colors";
+import { colors, ink } from "@/theme/colors";
 import type { Format } from "@janne6565/rekordo-shared";
 import { FORMAT_LABELS, formatBarcode } from "@janne6565/rekordo-shared";
 import { useRouter } from "expo-router";
@@ -121,7 +121,7 @@ export function ManualScreen({
                 hitSlop={6}
                 style={styles.coverBadge}
               >
-                <Camera size={12} color="#ffffff" strokeWidth={2} />
+                <Camera size={12} color={colors.onInk} strokeWidth={2} />
               </Pressable>
 
               {/* Only once there is one to take off, and never as a confirm step: nothing
@@ -134,7 +134,7 @@ export function ManualScreen({
                   hitSlop={6}
                   style={[styles.coverBadge, styles.coverBadgeRemove]}
                 >
-                  <X size={12} color="#ffffff" strokeWidth={2} />
+                  <X size={12} color={colors.onInk} strokeWidth={2} />
                 </Pressable>
               )}
             </Pressable>
@@ -145,7 +145,7 @@ export function ManualScreen({
                 value={logic.fields.artist}
                 onChangeText={(value) => logic.set("artist", value)}
                 placeholder={t("manual.artistPlaceholder")}
-                placeholderTextColor="rgba(25,23,19,0.3)"
+                placeholderTextColor={ink(0.3)}
                 autoFocus
                 style={[styles.input, styles.inputLead]}
               />
@@ -173,7 +173,7 @@ export function ManualScreen({
               value={logic.fields.title}
               onChangeText={(value) => logic.set("title", value)}
               placeholder={t("manual.titlePlaceholder")}
-              placeholderTextColor="rgba(25,23,19,0.3)"
+              placeholderTextColor={ink(0.3)}
               style={styles.input}
             />
           </View>
@@ -187,7 +187,7 @@ export function ManualScreen({
                 keyboardType="number-pad"
                 maxLength={4}
                 placeholder="————"
-                placeholderTextColor="rgba(25,23,19,0.3)"
+                placeholderTextColor={ink(0.3)}
                 style={styles.input}
               />
             </View>
@@ -197,7 +197,7 @@ export function ManualScreen({
                 value={logic.fields.label}
                 onChangeText={(value) => logic.set("label", value)}
                 placeholder={t("manual.labelPlaceholder")}
-                placeholderTextColor="rgba(25,23,19,0.3)"
+                placeholderTextColor={ink(0.3)}
                 style={styles.input}
               />
             </View>
@@ -216,7 +216,7 @@ export function ManualScreen({
               value={logic.fields.catalogNumber}
               onChangeText={(value) => logic.set("catalogNumber", value)}
               placeholder={t("manual.catalogPlaceholder")}
-              placeholderTextColor="rgba(25,23,19,0.3)"
+              placeholderTextColor={ink(0.3)}
               style={styles.input}
             />
           </View>
@@ -260,7 +260,7 @@ export function ManualScreen({
                 onPress={() => logic.keep("WISHLIST", barcode)}
                 style={[styles.destination, !logic.canSave && styles.destinationOff]}
               >
-                <Heart size={17} color="#ffffff" strokeWidth={1.8} />
+                <Heart size={17} color={colors.onInk} strokeWidth={1.8} />
                 <Text style={styles.destinationText}>{t("scan.wishlist")}</Text>
               </Pressable>
               <Pressable
@@ -270,7 +270,7 @@ export function ManualScreen({
                 onPress={() => logic.keep("SHELF", barcode)}
                 style={[styles.destination, !logic.canSave && styles.destinationOff]}
               >
-                <LibraryBig size={17} color="#ffffff" strokeWidth={1.8} />
+                <LibraryBig size={17} color={colors.onInk} strokeWidth={1.8} />
                 <Text style={styles.destinationText}>{t("scan.shelf")}</Text>
               </Pressable>
             </View>
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   cancel: { fontSize: 13.5, fontWeight: "500", color: colors.inkMuted },
   heading: { fontSize: 14, fontWeight: "600", color: colors.ink },
   save: { fontSize: 13.5, fontWeight: "600", color: colors.accent },
-  saveOff: { fontSize: 13.5, fontWeight: "600", color: "rgba(25,23,19,0.28)" },
+  saveOff: { fontSize: 13.5, fontWeight: "600", color: ink(0.28) },
   headerSpacer: { width: 44 },
   body: { paddingHorizontal: 18, paddingBottom: 28 },
   topRow: { flexDirection: "row", gap: 14, alignItems: "flex-start" },
@@ -333,13 +333,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1.5,
     borderStyle: "dashed",
-    borderColor: "rgba(25,23,19,0.2)",
+    borderColor: ink(0.2),
     backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
   },
   /** The dashed frame is an invitation; once there is a picture in it, it is furniture. */
-  coverWellFilled: { borderStyle: "solid", borderColor: "rgba(25,23,19,0.12)" },
+  coverWellFilled: { borderStyle: "solid", borderColor: ink(0.12) },
   coverImage: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, borderRadius: 8.5 },
   coverBadge: {
     position: "absolute",
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.ink,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(25,23,19,0.14)",
+    borderBottomColor: ink(0.14),
   },
   /** The field the screen opens on gets the solid rule the deck draws under it. */
   inputLead: {
@@ -394,9 +394,9 @@ const styles = StyleSheet.create({
   chipOff: {
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.12)",
+    borderColor: ink(0.12),
   },
-  chipTextOn: { fontSize: 12.5, fontWeight: "600", color: "#ffffff" },
+  chipTextOn: { fontSize: 12.5, fontWeight: "600", color: colors.onInk },
   chipTextOff: { fontSize: 12.5, fontWeight: "500", color: colors.inkMuted },
   laterRow: {
     flexDirection: "row",
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: "rgba(25,23,19,0.09)",
+    borderTopColor: colors.line,
   },
   laterLabel: { fontSize: 13.5, fontWeight: "500", color: colors.ink },
   laterAction: { fontSize: 12, fontWeight: "500", color: colors.inkMuted },
@@ -417,14 +417,14 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 12,
     borderTopWidth: 1,
-    borderTopColor: "rgba(25,23,19,0.08)",
+    borderTopColor: ink(0.08),
   },
   footerText: { flex: 1, fontSize: 11.5, lineHeight: 16, color: colors.inkMuted },
   scanFooter: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: "rgba(25,23,19,0.08)",
+    borderTopColor: ink(0.08),
   },
   scanFooterNote: {
     flexDirection: "row",
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
   },
   /** Two fields name a record; until both are there, there is nothing to file. */
   destinationOff: { opacity: 0.35 },
-  destinationText: { fontSize: 14.5, fontWeight: "600", color: "#ffffff" },
+  destinationText: { fontSize: 14.5, fontWeight: "600", color: colors.onInk },
 
   /**
    * 4b: the digits the scanner did read, kept at the top.
@@ -463,10 +463,10 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 16,
     borderRadius: 10,
-    backgroundColor: "rgba(25,23,19,0.05)",
+    backgroundColor: ink(0.05),
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.09)",
+    borderColor: colors.line,
   },
-  scanDigits: { flex: 1, fontFamily: MONO, fontSize: 11.5, color: "rgba(25,23,19,0.65)" },
+  scanDigits: { flex: 1, fontFamily: MONO, fontSize: 11.5, color: ink(0.65) },
   scanNote: { fontSize: 11, color: colors.inkSubtle },
 });

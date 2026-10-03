@@ -5,7 +5,7 @@ import { hiddenPressings, shownPressings } from "@/features/scan/shownPressings"
 import { SCAN_FORMATS, type useScannerLogic } from "@/features/scan/useScannerLogic";
 import { useAppSelector } from "@/store/hooks";
 import { isPendingScan } from "@/store/scanSlice";
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, ink } from "@/theme/colors";
 import type { Format, Release } from "@janne6565/rekordo-shared";
 import { CONDITION_LABELS, FORMAT_LABELS, formatBarcode } from "@janne6565/rekordo-shared";
 import {
@@ -243,7 +243,7 @@ function DuplicateActions({ logic, ownedId }: { readonly logic: Logic; readonly 
   return (
     <View style={styles.stack}>
       <Pressable accessibilityRole="button" onPress={logic.askWhereCopyGoes} style={styles.primary}>
-        <CopyPlus size={16} color="#ffffff" strokeWidth={2} />
+        <CopyPlus size={16} color={colors.onInk} strokeWidth={2} />
         <Text style={styles.primaryText}>{t("scan.addSecondCopy")}</Text>
       </Pressable>
       <Pressable
@@ -306,7 +306,7 @@ function MissingActions({ logic, barcode }: { readonly logic: Logic; readonly ba
         onPress={() => logic.enterManually(barcode)}
         style={[styles.primary, styles.half]}
       >
-        <PencilLine size={16} color="#ffffff" strokeWidth={2} />
+        <PencilLine size={16} color={colors.onInk} strokeWidth={2} />
         <Text style={styles.primaryText}>{t("scan.enterManually")}</Text>
       </Pressable>
       <Pressable
@@ -314,7 +314,7 @@ function MissingActions({ logic, barcode }: { readonly logic: Logic; readonly ba
         onPress={() => logic.searchByTitle(barcode)}
         style={[styles.secondary, styles.half]}
       >
-        <Search size={16} color="rgba(25,23,19,0.75)" strokeWidth={2} />
+        <Search size={16} color={ink(0.75)} strokeWidth={2} />
         <Text style={styles.secondaryText}>{t("scan.searchTitle")}</Text>
       </Pressable>
     </View>
@@ -340,7 +340,7 @@ function Offline({ logic }: { readonly logic: Logic }) {
 
       <View style={styles.head}>
         <View style={styles.pendingArt}>
-          <Disc3 size={24} color="rgba(25,23,19,0.3)" strokeWidth={1.6} />
+          <Disc3 size={24} color={ink(0.3)} strokeWidth={1.6} />
         </View>
         <View style={styles.headText}>
           <Text style={styles.digits}>{formatBarcode(card.barcode)}</Text>
@@ -453,7 +453,7 @@ function Destinations({ logic }: { readonly logic: Logic }) {
         onPress={() => logic.keep("WISHLIST")}
         style={[styles.primary, styles.half, styles.tall]}
       >
-        <Heart size={17} color="#ffffff" strokeWidth={1.8} />
+        <Heart size={17} color={colors.onInk} strokeWidth={1.8} />
         <Text style={styles.primaryText}>{t("scan.wishlist")}</Text>
       </Pressable>
       <Pressable
@@ -461,7 +461,7 @@ function Destinations({ logic }: { readonly logic: Logic }) {
         onPress={() => logic.keep("SHELF")}
         style={[styles.primary, styles.half, styles.tall]}
       >
-        <LibraryBig size={17} color="#ffffff" strokeWidth={1.8} />
+        <LibraryBig size={17} color={colors.onInk} strokeWidth={1.8} />
         <Text style={styles.primaryText}>{t("scan.shelf")}</Text>
       </Pressable>
     </View>
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.09)",
+    borderColor: colors.line,
     borderRadius: 22,
     paddingHorizontal: 18,
     paddingTop: 16,
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.12)",
+    borderColor: ink(0.12),
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontSize: 12.5,
     fontWeight: "600",
-    color: "rgba(25,23,19,0.72)",
+    color: ink(0.72),
   },
   underHead: { marginTop: 4 },
   underDigits: { marginTop: 10 },
@@ -588,7 +588,7 @@ const styles = StyleSheet.create({
     color: colors.inkSubtle,
   },
   eyebrowStrong: { color: colors.accentStrong },
-  rule: { flex: 1, height: 1, backgroundColor: "rgba(25,23,19,0.1)" },
+  rule: { flex: 1, height: 1, backgroundColor: ink(0.1) },
 
   head: { flexDirection: "row", gap: 14, marginTop: 12 },
   headArt: { width: 89, height: 74 },
@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 8,
-    backgroundColor: "#eae6de",
+    backgroundColor: colors.well,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -621,11 +621,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.12)",
+    borderColor: ink(0.12),
   },
   chipOn: { backgroundColor: colors.ink, borderColor: colors.ink },
   chipText: { fontFamily: fonts.sans, fontSize: 12, fontWeight: "500", color: colors.inkMuted },
-  chipTextOn: { color: "#ffffff", fontWeight: "600" },
+  chipTextOn: { color: colors.onInk, fontWeight: "600" },
   chipHint: { fontFamily: fonts.sans, fontSize: 11.5, color: colors.inkSubtle },
   spacer: { flex: 1 },
   othersLink: { fontFamily: fonts.sans, fontSize: 12, fontWeight: "500", color: colors.accent },
@@ -643,13 +643,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
   },
-  primaryText: { fontFamily: fonts.sans, fontSize: 14.5, fontWeight: "600", color: "#ffffff" },
+  primaryText: { fontFamily: fonts.sans, fontSize: 14.5, fontWeight: "600", color: colors.onInk },
   secondary: {
     height: 50,
     borderRadius: 999,
     backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.14)",
+    borderColor: ink(0.14),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -659,7 +659,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontSize: 14.5,
     fontWeight: "600",
-    color: "rgba(25,23,19,0.75)",
+    color: ink(0.75),
   },
 
   aside: {
@@ -668,13 +668,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.09)",
+    borderColor: colors.line,
   },
   asideText: {
     fontFamily: fonts.sans,
     fontSize: 12.5,
     lineHeight: 19,
-    color: "rgba(25,23,19,0.65)",
+    color: ink(0.65),
   },
 
   pressingHead: {
@@ -694,7 +694,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.1)",
+    borderColor: ink(0.1),
     marginBottom: 8,
   },
   pressingRowOn: { borderWidth: 1.5, borderColor: colors.ink },

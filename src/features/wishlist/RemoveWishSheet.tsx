@@ -1,6 +1,7 @@
 import { ReleaseArt } from "@/components/ReleaseArt";
 import { type RemoveRow, RemoveSheet } from "@/components/RemoveSheet";
 import type { RemovedWish } from "@/features/wishlist/useWishlistLogic";
+import { ink } from "@/theme/colors";
 import type { WishlistItem } from "@janne6565/rekordo-shared";
 import { FORMAT_LABELS } from "@janne6565/rekordo-shared";
 import { HeartOff } from "lucide-react-native";
@@ -102,5 +103,5 @@ export function RemoveWishSheet({
 
 const styles = StyleSheet.create({
   art: { width: 72, height: 60 },
-  thumb: { width: 30, height: 30, borderRadius: 4, marginVertical: -6, backgroundColor: "#e4ded3" },
+  thumb: { width: 30, height: 30, borderRadius: 4, marginVertical: -6, backgroundColor: ink(0.1) },
 });

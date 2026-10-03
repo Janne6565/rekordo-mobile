@@ -1,3 +1,4 @@
+import { appChromeFor } from "@/theme/chrome";
 import {
   type CoverTheme,
   DURATION,
@@ -7,7 +8,6 @@ import {
   WASH_DARK,
   WASH_INSTANT_BEFORE,
   WASH_LANES,
-  chromeFor,
   lightnessOfHex,
 } from "@janne6565/rekordo-shared";
 import { useEffect, useRef, useState } from "react";
@@ -86,7 +86,7 @@ export function useCoverWash(given: CoverTheme | null): CoverWash {
     if (given !== null) setHeld(given);
   }, [given]);
   const theme = given ?? held;
-  const chrome = chromeFor(theme);
+  const chrome = appChromeFor(theme);
 
   const paper = useRef(new Animated.Value(0)).current;
   const outgoingOpacity = useRef(new Animated.Value(0)).current;
@@ -97,7 +97,7 @@ export function useCoverWash(given: CoverTheme | null): CoverWash {
   const [outgoing, setOutgoing] = useState<DetailChrome | null>(null);
   const [barStyle, setBarStyle] = useState<"light" | "dark">(chrome.dark ? "light" : "dark");
   const previous = useRef<CoverTheme | null>(theme);
-  const [settled, setSettled] = useState<string>(chromeFor(null).background);
+  const [settled, setSettled] = useState<string>(appChromeFor(null).background);
   const reduced = useRef(false);
 
   useEffect(() => {
@@ -125,8 +125,8 @@ export function useCoverWash(given: CoverTheme | null): CoverWash {
       return;
     }
 
-    const from = chromeFor(was);
-    const to = chromeFor(theme);
+    const from = appChromeFor(was);
+    const to = appChromeFor(theme);
     if (from.dark === to.dark && from.background === to.background) {
       /*
        * Nothing to cross -- but the destination still has to be *on*. The screen is two
@@ -176,7 +176,7 @@ export function useCoverWash(given: CoverTheme | null): CoverWash {
       return () => clearTimeout(flipBar);
     }
 
-    setSettled(chromeFor(null).background);
+    setSettled(appChromeFor(null).background);
 
     /*
      * Landed while the push was still settling. A wash inside a push reads as a glitch, so

@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, useRootNavigationState, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Platform, StyleSheet } from "react-native";
+import { useEffect } from "react";
+import { Appearance, Platform, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Provider } from "react-redux";
@@ -13,11 +14,34 @@ import { UploadRefusalSheet } from "@/features/photos/UploadRefusalSheet";
 import { UndoProvider } from "@/features/wishlist/UndoBar";
 import { useReducedMotion } from "@/lib/motion";
 import { StoreProvider } from "@/local/StoreProvider";
+import { takeReturnTo } from "@/local/appearance";
 import { store } from "@/store";
 import { PendingScans } from "@/sync/PendingScans";
 import { SyncProvider } from "@/sync/SyncProvider";
+import { colors, isDark } from "@/theme/colors";
 
 const queryClient = new QueryClient();
+
+// The hidden dark mode (deck "Rekordo Dark Mode · Mobile") reaches the system's own pieces
+// too -- alerts, the keyboard, switches -- which follow the window's interface style rather
+// than our tokens. `app.json` pins that to light; this overrides it for the palette in use.
+Appearance.setColorScheme(isDark ? "dark" : "light");
+
+/**
+ * Back onto the screen the appearance was switched from, once the restart it takes is over.
+ *
+ * Waits for the root navigator: pushing before it has mounted is an error in expo-router.
+ */
+function ReturnAfterRestart() {
+  const router = useRouter();
+  const ready = useRootNavigationState()?.key !== undefined;
+  useEffect(() => {
+    if (!ready) return;
+    const route = takeReturnTo();
+    if (route !== null) router.push(route as never);
+  }, [ready, router]);
+  return null;
+}
 
 /** How round the card's top edge is on Android, in the absence of a system default. */
 const SHEET_RADIUS = 28;
@@ -67,7 +91,7 @@ export default function RootLayout() {
       <Provider store={store}>
         <QueryClientProvider client={queryClient}>
           <SafeAreaProvider>
-            <StatusBar style="dark" />
+            <StatusBar style={isDark ? "light" : "dark"} />
             <StoreProvider>
               {/* The session comes back from the keychain here, above the tabs: a tab is not
                 mounted until it is opened, and Friends must not have to guess. */}
@@ -103,7 +127,13 @@ export default function RootLayout() {
                    * goes and the screens simply replace one another.
                    */}
                   <Stack
-                    screenOptions={{ headerShown: false, animation: reduced ? "none" : "default" }}
+                    screenOptions={{
+                      headerShown: false,
+                      animation: reduced ? "none" : "default",
+                      // What shows between screens while one slides over another; paper
+                      // in both palettes, so dark mode never flashes white mid-transition.
+                      contentStyle: { backgroundColor: colors.paper },
+                    }}
                   >
                     {/* Your own copy. As an ordinary page in the stack every sideways swipe
                     was fighting the interactive back gesture, and that is not something you
@@ -123,6 +153,7 @@ export default function RootLayout() {
                      */}
                     <Stack.Screen name="profiles/[handle]/[open]" options={sheet(reduced)} />
                   </Stack>
+                  <ReturnAfterRestart />
                 </UndoProvider>
               </SyncProvider>
             </StoreProvider>
@@ -133,4 +164,4 @@ export default function RootLayout() {
   );
 }
 
-const styles = StyleSheet.create({ root: { flex: 1 } });
+const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: colors.paper } });

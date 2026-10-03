@@ -1,4 +1,4 @@
-import { colors } from "@/theme/colors";
+import { colors, ink } from "@/theme/colors";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   formatChip: {
     fontSize: 10,
     color: colors.inkMuted,
-    backgroundColor: "rgba(25,23,19,0.06)",
+    backgroundColor: ink(0.06),
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 6,

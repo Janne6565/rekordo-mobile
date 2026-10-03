@@ -7,9 +7,10 @@ import { usePageFlip } from "@/features/detail/usePageFlip";
 import { useFriendProfileLogic } from "@/features/friends/useFriendsLogic";
 import { useSharedCoverPhotos } from "@/features/friends/useSharedCoverPhotos";
 import { Tracklist } from "@/features/tracklist/Tracklist";
+import { appChromeFor } from "@/theme/chrome";
 import { colors, fonts } from "@/theme/colors";
 import type { Format } from "@janne6565/rekordo-shared";
-import { CONDITION_SHORT, FORMAT_LABELS, chromeFor } from "@janne6565/rekordo-shared";
+import { CONDITION_SHORT, FORMAT_LABELS } from "@janne6565/rekordo-shared";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
@@ -205,7 +206,7 @@ export function SharedDetailScreen({
  * repainted by somebody else's shelf, and a sheet that changed colour per record on a
  * stranger's page would read as a different app each time.
  */
-const CHROME = chromeFor(null);
+const CHROME = appChromeFor(null);
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.paper },

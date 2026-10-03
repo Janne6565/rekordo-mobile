@@ -11,7 +11,7 @@ import { albumAsRelease } from "@/features/add/albumRelease";
 import { FORMAT_FILTERS, useAddLogic } from "@/features/add/useAddLogic";
 import type { AddDestination } from "@/features/add/useAddSheetLogic";
 import { useCross } from "@/lib/motion";
-import { colors, fonts } from "@/theme/colors";
+import { accent, colors, fonts, ink } from "@/theme/colors";
 import type {
   Album,
   Artist,
@@ -592,7 +592,7 @@ function BarcodeNotFound({
         onPress={() => router.push("/manual")}
         style={styles.primaryAction}
       >
-        <PencilLine size={16} color={colors.night} strokeWidth={1.9} />
+        <PencilLine size={16} color={colors.onInk} strokeWidth={1.9} />
         <Text style={styles.primaryActionText}>{t("add.enterManually")}</Text>
       </Pressable>
       <Pressable
@@ -669,7 +669,7 @@ function RecordRow({
               {open ? (
                 <ChevronUp
                   size={11}
-                  color={open ? "#ffffff" : colors.accentStrong}
+                  color={open ? colors.onInk : colors.accentStrong}
                   strokeWidth={2.2}
                 />
               ) : (
@@ -682,7 +682,7 @@ function RecordRow({
           {logic.ownedAlbum(album) ? (
             <CopyPlus size={15} color={colors.inkMuted} strokeWidth={1.8} />
           ) : (
-            <Plus size={16} color="#ffffff" strokeWidth={2} />
+            <Plus size={16} color={colors.onInk} strokeWidth={2} />
           )}
         </View>
       </Pressable>
@@ -824,7 +824,7 @@ function ResultRow({
             same, and the icon is the only place left to say that this one would be another
             of something you have. */}
         {owned === null ? (
-          <Plus size={16} color="#ffffff" strokeWidth={2} />
+          <Plus size={16} color={colors.onInk} strokeWidth={2} />
         ) : (
           <CopyPlus size={15} color={colors.inkMuted} strokeWidth={1.8} />
         )}
@@ -842,7 +842,7 @@ function ResultRow({
 const CANCEL_SLOP = { top: 14, bottom: 14, left: 10, right: 18 } as const;
 const LINK_SLOP = { top: 16, bottom: 16, left: 12, right: 12 } as const;
 
-const HAIRLINE = "rgba(25,23,19,0.08)";
+const HAIRLINE = ink(0.08);
 const MONO = "ui-monospace";
 
 const styles = StyleSheet.create({
@@ -871,7 +871,7 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 999,
-    backgroundColor: "rgba(25,23,19,0.16)",
+    backgroundColor: ink(0.16),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -887,11 +887,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 999,
-    backgroundColor: "rgba(162,87,58,0.11)",
+    backgroundColor: accent(0.11),
   },
   editionChipOpen: { backgroundColor: colors.ink },
   editionChipText: { fontFamily: "monospace", fontSize: 10, color: colors.accentStrong },
-  editionChipTextOpen: { color: "#ffffff" },
+  editionChipTextOpen: { color: colors.onInk },
   editions: {
     marginLeft: 26,
     paddingLeft: 16,
@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.09)",
+    borderColor: colors.line,
   },
   /* One line at 12.5, which is what the longer German label needs to fit beside an icon. */
   shortcutTitle: { flex: 1, fontSize: 12.5, lineHeight: 16, fontWeight: "600", color: colors.ink },
@@ -1003,7 +1003,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.12)",
+    borderColor: ink(0.12),
   },
   formatChipActive: { backgroundColor: colors.ink, borderColor: colors.ink },
   /*
@@ -1018,7 +1018,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: colors.inkMuted,
   },
-  formatChipTextActive: { fontWeight: "600", color: "#ffffff" },
+  formatChipTextActive: { fontWeight: "600", color: colors.onInk },
   rowBody: { flex: 1 },
   rowTitle: { fontSize: 13.5, fontWeight: "600", color: colors.ink },
   rowSubtitle: { fontSize: 11.5, color: colors.inkMuted },
@@ -1036,7 +1036,7 @@ const styles = StyleSheet.create({
   rowAddOwned: {
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.14)",
+    borderColor: ink(0.14),
   },
   rowOwnedLine: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 2 },
   rowOwnedText: { fontFamily: MONO, fontSize: 10, color: colors.accentStrong },
@@ -1048,7 +1048,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.09)",
+    borderColor: colors.line,
   },
   scannedCode: { fontSize: 12, fontVariant: ["tabular-nums"], color: colors.ink },
   scannedSource: { fontSize: 11, color: colors.inkSubtle, marginTop: 2 },
@@ -1058,7 +1058,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 999,
-    backgroundColor: "rgba(25,23,19,0.06)",
+    backgroundColor: ink(0.06),
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 10,
@@ -1080,7 +1080,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.ink,
   },
-  primaryActionText: { fontSize: 14, fontWeight: "600", color: "#ffffff" },
+  primaryActionText: { fontSize: 14, fontWeight: "600", color: colors.onInk },
   secondaryAction: {
     flexDirection: "row",
     alignItems: "center",
@@ -1091,7 +1091,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.14)",
+    borderColor: ink(0.14),
   },
   secondaryActionText: { fontSize: 14, fontWeight: "600", color: colors.ink },
   scanner: { flex: 1, backgroundColor: "#000" },

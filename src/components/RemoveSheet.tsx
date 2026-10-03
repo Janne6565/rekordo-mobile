@@ -1,5 +1,5 @@
 import { ScrimSheet } from "@/components/ScrimSheet";
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, ink } from "@/theme/colors";
 import { LibraryBig, type LucideIcon } from "lucide-react-native";
 import { type ReactNode, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -139,7 +139,7 @@ export function RemoveSheet({
               }}
               style={({ pressed }) => [styles.confirm, pressed && styles.pressed]}
             >
-              <ConfirmIcon size={16} color="#ffffff" strokeWidth={1.9} />
+              <ConfirmIcon size={16} color={colors.onInk} strokeWidth={1.9} />
               <Text style={styles.confirmText}>{confirmLabel}</Text>
             </Pressable>
             <Pressable
@@ -164,7 +164,7 @@ const EXIT_EASING = Easing.bezier(0.32, 0.72, 0, 1);
 /** What the sheet sits on when the system asks for nothing; see `useSheetBottom`. */
 const SHEET_PAD = 42;
 const MONO = "ui-monospace";
-const RULE = "rgba(25,23,19,0.09)";
+const RULE = colors.line;
 
 const styles = StyleSheet.create({
   sheet: {
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   },
   // Over the paper of 16b the scrim is light, so the panel needs its own edge.
   sheetOnPaper: {
-    shadowColor: colors.ink,
+    shadowColor: colors.shadow,
     shadowOpacity: 0.18,
     shadowRadius: 15,
     shadowOffset: { width: 0, height: -8 },
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 5,
     borderRadius: 999,
-    backgroundColor: "rgba(25,23,19,0.16)",
+    backgroundColor: ink(0.16),
     marginBottom: 18,
   },
   title: { fontFamily: fonts.serif, fontSize: 24, lineHeight: 28, color: colors.ink },
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: "rgba(25,23,19,0.04)",
+    backgroundColor: ink(0.04),
   },
   staysTitle: { fontFamily: fonts.sans, fontSize: 13, fontWeight: "600", color: colors.ink },
   staysLine: { fontFamily: fonts.sans, fontSize: 11.5, color: colors.inkMuted, marginTop: 2 },
@@ -257,13 +257,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
   },
-  confirmText: { fontFamily: fonts.sans, fontSize: 14.5, fontWeight: "600", color: "#ffffff" },
+  confirmText: { fontFamily: fonts.sans, fontSize: 14.5, fontWeight: "600", color: colors.onInk },
   keep: {
     height: 50,
     borderRadius: 999,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.14)",
+    borderColor: ink(0.14),
     alignItems: "center",
     justifyContent: "center",
   },

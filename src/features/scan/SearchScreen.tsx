@@ -3,7 +3,7 @@ import { KeyboardLift } from "@/components/KeyboardLift";
 import { ReleaseArt } from "@/components/ReleaseArt";
 import { SessionBar } from "@/features/scan/SessionBar";
 import { useScanSearchLogic } from "@/features/scan/useScanSearchLogic";
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, ink } from "@/theme/colors";
 import type { RecordGroup } from "@janne6565/rekordo-shared";
 import { formatBarcode } from "@janne6565/rekordo-shared";
 import { ChevronLeft, ChevronRight, PencilLine, ScanBarcode, Search, X } from "lucide-react-native";
@@ -45,7 +45,7 @@ export function SearchScreen({ barcode = "" }: { readonly barcode?: string } = {
             onPress={logic.back}
             style={styles.round}
           >
-            <ChevronLeft size={17} color="rgba(25,23,19,0.65)" strokeWidth={1.9} />
+            <ChevronLeft size={17} color={ink(0.65)} strokeWidth={1.9} />
           </Pressable>
           <View style={styles.field}>
             <Search size={15} color={colors.inkMuted} strokeWidth={2} />
@@ -53,7 +53,7 @@ export function SearchScreen({ barcode = "" }: { readonly barcode?: string } = {
               value={logic.term}
               onChangeText={logic.setTerm}
               placeholder={t("scan.search.placeholder")}
-              placeholderTextColor="rgba(25,23,19,0.3)"
+              placeholderTextColor={ink(0.3)}
               autoFocus
               autoCorrect={false}
               returnKeyType="search"
@@ -168,7 +168,7 @@ function ResultRow({
       {picking ? (
         <ActivityIndicator size="small" color={colors.inkSubtle} />
       ) : (
-        <ChevronRight size={16} color="rgba(25,23,19,0.35)" strokeWidth={2} />
+        <ChevronRight size={16} color={ink(0.35)} strokeWidth={2} />
       )}
     </Pressable>
   );
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.1)",
+    borderColor: ink(0.1),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(25,23,19,0.08)",
+    borderBottomColor: ink(0.08),
   },
   rowText: { flex: 1, minWidth: 0 },
   rowTitle: { fontFamily: fonts.sans, fontSize: 13.5, fontWeight: "600", color: colors.ink },

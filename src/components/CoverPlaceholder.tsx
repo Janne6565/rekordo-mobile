@@ -1,3 +1,4 @@
+import { isDark } from "@/theme/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { Disc3 } from "lucide-react-native";
 import { useState } from "react";
@@ -40,7 +41,7 @@ export function CoverPlaceholder() {
        * like, and the difference is one gradient.
        */}
       <LinearGradient
-        colors={["rgba(255,255,255,0.55)", "rgba(255,255,255,0.06)", "rgba(25,23,19,0.06)"]}
+        colors={LIGHT_FALL}
         locations={[0, 0.58, 1]}
         start={{ x: 0.1, y: 0 }}
         end={{ x: 0.9, y: 1 }}
@@ -54,6 +55,14 @@ export function CoverPlaceholder() {
     </View>
   );
 }
+
+/**
+ * The light across the sleeve. In dark mode (deck 3b) the sheet is lifted two steps above
+ * the canvas, so a white highlight would read as a glare: the fall is kept, much fainter.
+ */
+const LIGHT_FALL = isDark
+  ? (["rgba(244,241,236,0.06)", "rgba(244,241,236,0.015)", "rgba(0,0,0,0.12)"] as const)
+  : (["rgba(255,255,255,0.55)", "rgba(255,255,255,0.06)", "rgba(25,23,19,0.06)"] as const);
 
 /** How much of the frame the embossed disc takes across. */
 const MARK_SCALE = 0.32;
@@ -74,10 +83,16 @@ const MIN_MARK_WIDTH = 52;
  * paper's own surface, and an icon at this size competes with the title underneath for
  * being the thing the screen is about.
  */
-const MARK_INK = "rgba(25,23,19,0.13)";
+const MARK_INK = isDark ? "rgba(244,241,236,0.1)" : "rgba(25,23,19,0.13)";
+
+/**
+ * The sleeve stock. Dark (deck 3b) stripes #25231f and #2b2824; flattened to their mean,
+ * as the light paper is, because React Native has no repeating gradient.
+ */
+const SLEEVE = isDark ? "#282521" : "#e7e2d9";
 
 const styles = StyleSheet.create({
   /** The sleeve stock `FormatThumb` prints its cover panel on, so the two agree. */
-  paper: { backgroundColor: "#e7e2d9", overflow: "hidden" },
+  paper: { backgroundColor: SLEEVE, overflow: "hidden" },
   centre: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center" },
 });

@@ -5,7 +5,7 @@ import { SCAN_FORMATS, scanFormat } from "@/features/scan/useScannerLogic";
 import { useStore } from "@/local/StoreProvider";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { type KeptScan, countByDestination, scanActions, scanNaming } from "@/store/scanSlice";
-import { colors, fonts } from "@/theme/colors";
+import { accent, colors, fonts, ink } from "@/theme/colors";
 import type { Format } from "@janne6565/rekordo-shared";
 import { FORMAT_LABELS, formatBarcode, wishSatisfiedBy } from "@janne6565/rekordo-shared";
 import { useQuery } from "@tanstack/react-query";
@@ -108,7 +108,7 @@ function ReviewRow({ scan }: { readonly scan: KeptScan }) {
       <View style={styles.rowTop}>
         {naming === null ? (
           <View style={styles.pending}>
-            <Disc3 size={20} color="rgba(25,23,19,0.3)" strokeWidth={1.6} />
+            <Disc3 size={20} color={ink(0.3)} strokeWidth={1.6} />
           </View>
         ) : (
           <ReleaseArt
@@ -163,7 +163,7 @@ function ReviewRow({ scan }: { readonly scan: KeptScan }) {
           onPress={() => dispatch(scanActions.dropped(scan.key))}
           hitSlop={8}
         >
-          <X size={15} color="rgba(25,23,19,0.35)" strokeWidth={2} />
+          <X size={15} color={ink(0.35)} strokeWidth={2} />
         </Pressable>
       </View>
 
@@ -190,7 +190,7 @@ function ReviewRow({ scan }: { readonly scan: KeptScan }) {
           style={[styles.destination, wished && styles.destinationWished]}
         >
           {wished ? (
-            <Heart size={12} color="#ffffff" strokeWidth={2} />
+            <Heart size={12} color={colors.onInk} strokeWidth={2} />
           ) : (
             <LibraryBig size={12} color={colors.inkMuted} strokeWidth={2} />
           )}
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(25,23,19,0.09)",
+    borderBottomColor: colors.line,
   },
   back: { fontFamily: fonts.sans, fontSize: 13.5, fontWeight: "500", color: colors.accent },
   headerCount: { fontFamily: fonts.sans, fontSize: 14, fontWeight: "600", color: colors.ink },
@@ -249,22 +249,22 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.09)",
+    borderColor: colors.line,
   },
-  rowWished: { borderColor: "rgba(162,87,58,0.35)" },
+  rowWished: { borderColor: accent(0.35) },
   rowTop: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
   art: { width: 65, height: 54 },
   pending: {
     width: 54,
     height: 54,
     borderRadius: 7,
-    backgroundColor: "#eae6de",
+    backgroundColor: colors.well,
     alignItems: "center",
     justifyContent: "center",
   },
   rowText: { flex: 1, minWidth: 0 },
   rowTitle: { fontFamily: fonts.sans, fontSize: 13.5, fontWeight: "600", color: colors.ink },
-  rowTitleQuiet: { fontWeight: "400", color: "rgba(25,23,19,0.5)" },
+  rowTitleQuiet: { fontWeight: "400", color: ink(0.5) },
   rowMeta: { fontFamily: fonts.sans, fontSize: 11.5, color: colors.inkMuted, marginTop: 2 },
   digits: { fontFamily: MONO, fontSize: 12.5, color: colors.ink },
   note: { fontFamily: fonts.sans, fontSize: 11, color: colors.inkSubtle, marginTop: 3 },
@@ -279,11 +279,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.12)",
+    borderColor: ink(0.12),
   },
   chipOn: { backgroundColor: colors.ink, borderColor: colors.ink },
   chipText: { fontFamily: fonts.sans, fontSize: 11.5, fontWeight: "500", color: colors.inkMuted },
-  chipTextOn: { color: "#ffffff", fontWeight: "600" },
+  chipTextOn: { color: colors.onInk, fontWeight: "600" },
   destination: {
     flexDirection: "row",
     alignItems: "center",
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.12)",
+    borderColor: ink(0.12),
   },
   destinationWished: { backgroundColor: colors.accent, borderColor: colors.accent },
   destinationText: {
@@ -302,13 +302,13 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: colors.inkMuted,
   },
-  destinationTextOn: { color: "#ffffff" },
+  destinationTextOn: { color: colors.onInk },
 
   footer: {
     paddingHorizontal: 18,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: "rgba(25,23,19,0.09)",
+    borderTopColor: colors.line,
     backgroundColor: colors.surface,
   },
   primary: {
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   primaryOff: { opacity: 0.4 },
-  primaryText: { fontFamily: fonts.sans, fontSize: 15, fontWeight: "600", color: "#ffffff" },
+  primaryText: { fontFamily: fonts.sans, fontSize: 15, fontWeight: "600", color: colors.onInk },
   reassure: {
     flexDirection: "row",
     alignItems: "center",

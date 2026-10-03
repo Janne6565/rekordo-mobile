@@ -5,7 +5,7 @@ import { WishRow, wishCardStyle } from "@/components/WishRow";
 import { Avatar } from "@/features/friends/Avatar";
 import { useFriendProfileLogic } from "@/features/friends/useFriendsLogic";
 import { useSharedCoverPhotos } from "@/features/friends/useSharedCoverPhotos";
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, ink } from "@/theme/colors";
 import type { Format } from "@janne6565/rekordo-shared";
 import { FORMAT_LABELS } from "@janne6565/rekordo-shared";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 3,
     borderRadius: 9,
-    backgroundColor: "rgba(25,23,19,0.06)",
+    backgroundColor: ink(0.06),
   },
   tab: {
     flex: 1,
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     backgroundColor: colors.surface,
-    shadowColor: "rgba(25,23,19,1)",
+    shadowColor: colors.shadow,
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 1 },
     shadowRadius: 2,

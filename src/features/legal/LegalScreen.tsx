@@ -1,12 +1,14 @@
 import { accountConsents } from "@/api/auth";
+import { useHiddenAppearance } from "@/features/legal/useHiddenAppearance";
 import { useLegalLanguage } from "@/features/legal/useLegalLanguage";
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, ink } from "@/theme/colors";
 import { LEGAL_DOCUMENTS, type LegalDocumentId } from "@janne6565/rekordo-shared";
 import { useQuery } from "@tanstack/react-query";
+import * as Application from "expo-application";
 import { useRouter } from "expo-router";
 import { ChevronLeft, ChevronRight, Download, Pencil, Trash2 } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const SLUG_OF: Record<LegalDocumentId, string> = {
@@ -21,11 +23,25 @@ const SLUG_OF: Record<LegalDocumentId, string> = {
  * Documents first, then what you can do about your own data, then the language switch. The
  * order is the reading order: somebody arrives here either to read something or to act on
  * something, and the language is a setting for the first of those.
+ *
+ * The build version closes the screen, and is also the hidden dark mode's trigger (deck
+ * "Rekordo Dark Mode · Mobile", 1a-1c): Legal is the screen nobody expects a setting on, and
+ * the version line the one element nobody taps on purpose.
  */
 export function LegalScreen({ signedIn }: { readonly signedIn: boolean }) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const { language, choose } = useLegalLanguage();
+  const appearance = useHiddenAppearance({
+    // A stand-in until the restart warning is designed: the system's own dialog.
+    confirmRestart: () =>
+      new Promise((resolve) =>
+        Alert.alert(t("legal.appearance.restartTitle"), t("legal.appearance.restartBody"), [
+          { text: t("legal.appearance.cancel"), style: "cancel", onPress: () => resolve(false) },
+          { text: t("legal.appearance.restart"), onPress: () => resolve(true) },
+        ]),
+      ),
+  });
 
   // Only meaningful with an account, and quietly empty without one -- a device that never
   // registered has agreed to nothing on a server.
@@ -136,7 +152,46 @@ export function LegalScreen({ signedIn }: { readonly signedIn: boolean }) {
           ))}
         </View>
         <Text style={styles.note}>{t("legal.bindingNotice")}</Text>
+
+        {appearance.revealed && (
+          <>
+            <Text style={styles.appearanceLabel}>{t("legal.appearance.title")}</Text>
+            <View style={styles.card}>
+              <View style={styles.switchRow}>
+                <View style={styles.rowText}>
+                  <Text style={styles.rowTitle}>{t("legal.appearance.darkMode")}</Text>
+                  <Text style={styles.rowBody}>{t("legal.appearance.deviceOnly")}</Text>
+                </View>
+                <Switch
+                  value={appearance.dark}
+                  onValueChange={appearance.setDark}
+                  trackColor={{ true: colors.switchOn, false: ink(0.14) }}
+                />
+              </View>
+            </View>
+          </>
+        )}
+
+        <View style={[styles.versionWrap, appearance.revealed && styles.versionWrapRevealed]}>
+          <Pressable
+            onPress={appearance.tapVersion}
+            accessibilityLabel={t("legal.appearance.version")}
+            style={[styles.version, appearance.counting && styles.versionCounting]}
+          >
+            <Text style={styles.versionText}>
+              {`REKORDO ${Application.nativeApplicationVersion ?? ""} (${Application.nativeBuildVersion ?? ""})`}
+            </Text>
+          </Pressable>
+        </View>
       </ScrollView>
+
+      {appearance.tapsLeft !== null && (
+        <View style={styles.toastWrap} pointerEvents="none">
+          <Text style={styles.toast}>
+            {t("legal.appearance.tapsLeft", { count: appearance.tapsLeft })}
+          </Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -168,6 +223,8 @@ function DataRow({
     </Pressable>
   );
 }
+
+const MONO = "ui-monospace";
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.paper },
@@ -215,7 +272,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 14,
   },
-  rowDivider: { borderBottomWidth: 1, borderBottomColor: "rgba(25,23,19,0.07)" },
+  rowDivider: { borderBottomWidth: 1, borderBottomColor: ink(0.07) },
   rowText: { flex: 1, paddingRight: 10 },
   rowTitle: { fontSize: 13.5, fontWeight: "600", color: colors.ink },
   rowBody: { fontSize: 11.5, color: colors.inkMuted, marginTop: 2 },
@@ -233,7 +290,7 @@ const styles = StyleSheet.create({
     gap: 6,
     padding: 4,
     borderRadius: 10,
-    backgroundColor: "rgba(25,23,19,0.06)",
+    backgroundColor: ink(0.06),
     marginTop: 8,
   },
   languageOption: {
@@ -246,4 +303,43 @@ const styles = StyleSheet.create({
   languageOptionOn: { backgroundColor: colors.surface },
   languageText: { fontSize: 12.5, fontWeight: "500", color: colors.inkMuted },
   languageTextOn: { fontWeight: "600", color: colors.ink },
+  appearanceLabel: {
+    fontSize: 10,
+    fontWeight: "500",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    color: colors.inkSubtle,
+    marginTop: 16,
+  },
+  switchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  versionWrap: { alignItems: "center", marginTop: 40 },
+  versionWrapRevealed: { marginTop: 8 },
+  version: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
+  versionCounting: { backgroundColor: ink(0.06) },
+  versionText: {
+    fontFamily: MONO,
+    fontSize: 10.5,
+    fontWeight: "500",
+    letterSpacing: 0.6,
+    color: colors.inkSubtle,
+  },
+  toastWrap: { position: "absolute", left: 0, right: 0, bottom: 44, alignItems: "center" },
+  toast: {
+    overflow: "hidden",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: colors.ink,
+    color: colors.paper,
+    fontFamily: fonts.sans,
+    fontSize: 12.5,
+    fontWeight: "600",
+  },
 });

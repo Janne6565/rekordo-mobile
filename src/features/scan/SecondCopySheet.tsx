@@ -2,7 +2,7 @@ import { ReleaseArt } from "@/components/ReleaseArt";
 import { ScrimSheet } from "@/components/ScrimSheet";
 import { useStore } from "@/local/StoreProvider";
 import type { ScanDestination } from "@/store/scanSlice";
-import { colors, fonts } from "@/theme/colors";
+import { accent, colors, fonts, ink } from "@/theme/colors";
 import type { Copy, Format, Release } from "@janne6565/rekordo-shared";
 import { CONDITION_SHORT, FORMAT_LABELS, wishSatisfiedBy } from "@janne6565/rekordo-shared";
 import { useQuery } from "@tanstack/react-query";
@@ -182,7 +182,7 @@ function Tile({
       style={({ pressed }) => [styles.tile, pressed && styles.tilePressed]}
     >
       <View style={styles.badge}>
-        <Icon size={19} color="#ffffff" strokeWidth={1.8} />
+        <Icon size={19} color={colors.onInk} strokeWidth={1.8} />
       </View>
       <View style={styles.tileText}>
         <Text style={styles.tileTitle}>{title}</Text>
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: SHEET_PAD,
-    shadowColor: "#000000",
+    shadowColor: colors.shadow,
     shadowOpacity: 0.28,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: -10 },
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 5,
     borderRadius: 999,
-    backgroundColor: "rgba(25,23,19,0.18)",
+    backgroundColor: ink(0.18),
     marginBottom: 16,
   },
   release: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 4 },
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(25,23,19,0.14)",
+    borderColor: ink(0.14),
     gap: 10,
   },
   tilePressed: { backgroundColor: colors.canvas },
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderWidth: 1.5,
     borderStyle: "dashed",
-    borderColor: "rgba(25,23,19,0.2)",
+    borderColor: ink(0.2),
   },
   badge: {
     width: 42,
@@ -273,10 +273,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  badgeWished: { backgroundColor: "rgba(162,87,58,0.12)" },
+  badgeWished: { backgroundColor: accent(0.12) },
   tileText: { flex: 1 },
   tileTitle: { fontFamily: fonts.sans, fontSize: 16, fontWeight: "600", color: colors.ink },
-  tileTitleWished: { color: "rgba(25,23,19,0.72)" },
+  tileTitleWished: { color: ink(0.72) },
   tileBody: {
     fontFamily: fonts.sans,
     fontSize: 12.5,
@@ -298,6 +298,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontSize: 14,
     fontWeight: "600",
-    color: "rgba(25,23,19,0.6)",
+    color: ink(0.6),
   },
 });

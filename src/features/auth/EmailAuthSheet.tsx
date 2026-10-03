@@ -2,7 +2,7 @@ import { KeyboardLift } from "@/components/KeyboardLift";
 import { RisingSheet, useSheetBottom } from "@/components/RisingSheet";
 import { ChallengeGate } from "@/features/auth/ChallengeGate";
 import type { useAccountLogic } from "@/features/auth/useAccountLogic";
-import { colors, fonts } from "@/theme/colors";
+import { colors, fonts, ink } from "@/theme/colors";
 import { passwordStrength } from "@janne6565/rekordo-shared";
 import { useRouter } from "expo-router";
 import { Check, Eye, EyeOff, Lock, Mail, User, X } from "lucide-react-native";
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 4,
     borderRadius: 999,
-    backgroundColor: "rgba(25,23,19,0.16)",
+    backgroundColor: ink(0.16),
     marginTop: 10,
   },
   content: { padding: 18, paddingTop: 16, paddingBottom: SHEET_PAD, gap: 14 },

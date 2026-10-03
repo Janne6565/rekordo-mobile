@@ -1,5 +1,5 @@
 import { starGlyphs } from "@/domain/rating";
-import { colors } from "@/theme/colors";
+import { colors, ink } from "@/theme/colors";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
 
@@ -94,5 +94,5 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 10.5, color: colors.inkMuted },
   rating: { fontSize: 10, lineHeight: 13, letterSpacing: 1.5, marginTop: 3 },
   ratingOn: { color: colors.accent },
-  ratingOff: { color: "rgba(25,23,19,0.2)" },
+  ratingOff: { color: ink(0.2) },
 });

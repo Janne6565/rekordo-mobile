@@ -371,7 +371,7 @@ export function RollWheel({
         pointerEvents="none"
       >
         <LinearGradient
-          colors={[colors.paper, "rgba(250,248,245,0)"]}
+          colors={[colors.paper, `${colors.paper}00`]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={StyleSheet.absoluteFill}
@@ -382,7 +382,7 @@ export function RollWheel({
         pointerEvents="none"
       >
         <LinearGradient
-          colors={["rgba(250,248,245,0)", colors.paper]}
+          colors={[`${colors.paper}00`, colors.paper]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={StyleSheet.absoluteFill}
