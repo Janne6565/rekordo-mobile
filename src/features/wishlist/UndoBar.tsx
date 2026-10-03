@@ -22,19 +22,12 @@ export interface WishUndo {
   readonly wantedSince: number;
 }
 
-/**
- * Something the person removed themselves (3a-x-e, 16b-x-c), and how to bring it back.
- *
- * `expire` is what may only happen once Undo can no longer be pressed -- a removed wish's
- * picture is held on the device until then, because a deleted photo cannot come back. It
- * runs when the bar times out or another one replaces it, never after an Undo.
- */
+/** Something the person removed themselves (3a-x-e, 16b-x-c), and how to bring it back. */
 export interface RemovalUndo {
   readonly kind: "COPY" | "WISH";
   readonly title: string;
   readonly line: string;
   readonly undo: () => Promise<void>;
-  readonly expire?: () => Promise<void>;
 }
 
 type Pending =
@@ -65,29 +58,12 @@ export function useUndo(): UndoControls {
 export function UndoProvider({ children }: { readonly children: ReactNode }) {
   const [pending, setPending] = useState<Pending | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  /** The removal whose `expire` is still owed, kept outside state so a timer can reach it. */
-  const owed = useRef<RemovalUndo | null>(null);
 
-  /** Settles whatever bar is up: its deferred work runs, unless it was undone. */
-  const settle = useCallback(() => {
+  const show = useCallback((next: Pending) => {
+    setPending(next);
     clearTimeout(timer.current);
-    const removal = owed.current;
-    owed.current = null;
-    if (removal?.expire !== undefined) void removal.expire();
+    timer.current = setTimeout(() => setPending(null), UNDO_HOLD);
   }, []);
-
-  const show = useCallback(
-    (next: Pending) => {
-      settle();
-      if (next.type === "REMOVAL") owed.current = next.removal;
-      setPending(next);
-      timer.current = setTimeout(() => {
-        settle();
-        setPending(null);
-      }, UNDO_HOLD);
-    },
-    [settle],
-  );
 
   const offer = useCallback((wish: WishUndo) => show({ type: "WISH", wish }), [show]);
   const offerRemoval = useCallback(
@@ -95,7 +71,7 @@ export function UndoProvider({ children }: { readonly children: ReactNode }) {
     [show],
   );
 
-  useEffect(() => settle, [settle]);
+  useEffect(() => () => clearTimeout(timer.current), []);
 
   const done = () => {
     clearTimeout(timer.current);
@@ -106,16 +82,7 @@ export function UndoProvider({ children }: { readonly children: ReactNode }) {
     <UndoContext.Provider value={{ offer, offerRemoval }}>
       {children}
       {pending?.type === "WISH" && <UndoLine undo={pending.wish} onDone={done} />}
-      {pending?.type === "REMOVAL" && (
-        <RemovalLine
-          removal={pending.removal}
-          onUndone={() => {
-            // Undone, so nothing it was holding back may now go ahead.
-            owed.current = null;
-            done();
-          }}
-        />
-      )}
+      {pending?.type === "REMOVAL" && <RemovalLine removal={pending.removal} onUndone={done} />}
     </UndoContext.Provider>
   );
 }

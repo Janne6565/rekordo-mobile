@@ -17,7 +17,6 @@ import {
   moveWish,
   restoreWishlistItem,
   sortWishlist,
-  tombstonePhoto,
   tombstoneWishlistItem,
 } from "@janne6565/rekordo-shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -235,7 +234,9 @@ export function useWishlistLogic() {
     },
     onSuccess: async (_result, { item, summary }) => {
       await invalidate();
-      // 16b-x-c: the entry can come back for as long as the bar is up.
+      // 16b-x-c: the entry can come back for as long as the bar is up. Its picture stays
+      // until well after that: `sweepOrphanPhotos` (rekordo-shared) puts it down on a later
+      // sync, once Undo is out of reach, because a deleted photo could not come back with it.
       offerRemoval({
         kind: "WISH",
         title: summary.title,
@@ -245,20 +246,6 @@ export function useWishlistLogic() {
           if (gone === undefined) return;
           await store.putWishlistItem(restoreWishlistItem(gone, clock));
           await invalidate();
-        },
-        /*
-         * The picture goes with it, but only once Undo is out of reach. A wish id is never
-         * reused, so a photo left behind is one nothing can ever reference again -- and the
-         * server deletes the object in storage when the record is put down, so a picture
-         * deleted at the tap could not have come back with the entry.
-         */
-        expire: async () => {
-          const still = await store.getWishlistItemIncludingDeleted(item.id);
-          if (still === undefined || still.deletedAt === null) return;
-          const picture = (await store.listWishPhotos([item.id])).get(item.id);
-          if (picture === undefined) return;
-          await store.putPhoto(tombstonePhoto(picture, clock, Date.now()));
-          await queryClient.invalidateQueries({ queryKey: ["wish-photos"] });
         },
       });
     },

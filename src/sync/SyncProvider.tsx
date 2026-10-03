@@ -8,7 +8,7 @@ import {
 } from "@/local/settings";
 import { useAppSelector } from "@/store/hooks";
 import { createSyncEngine } from "@/sync/transport";
-import { useSyncLoop } from "@janne6565/rekordo-shared";
+import { sweepOrphanPhotos, useSyncLoop } from "@janne6565/rekordo-shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, createContext, useCallback, useContext, useEffect, useRef } from "react";
 import { AppState } from "react-native";
@@ -116,6 +116,18 @@ export function SyncProvider({ children }: { readonly children: ReactNode }) {
     localWrites,
     intervalMs: SYNC_INTERVAL_MS,
   });
+
+  /*
+   * A signed-out phone never syncs, and the sync pass is where a removed record's photos
+   * are put down. So it gets the sweep on its own, once per start: the bytes live only on
+   * this device, and nothing else would ever free them.
+   */
+  useEffect(() => {
+    if (user !== null) return;
+    void sweepOrphanPhotos(store, clock, Date.now()).then((swept) => {
+      if (swept > 0) void queryClient.invalidateQueries();
+    });
+  }, [user, store, clock, queryClient]);
 
   const appState = useRef(AppState.currentState);
   useEffect(() => {
