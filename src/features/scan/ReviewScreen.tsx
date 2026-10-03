@@ -13,7 +13,7 @@ import { useRouter } from "expo-router";
 import { Disc3, HardDrive, Heart, LibraryBig, X } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 /**
  * The tray, opened up: everything kept this visit, still changeable.
@@ -28,6 +28,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export function ReviewScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const kept = useAppSelector((state) => state.scan.kept);
   const counts = countByDestination(kept);
   const { save, saving } = useSaveBatch();
@@ -38,7 +39,7 @@ export function ReviewScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
         {/* To the camera by name rather than one step back: Review is also reachable from
             the title search, and the label promises the camera from there too. */}
@@ -59,7 +60,7 @@ export function ReviewScreen() {
         ))}
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom }]}>
         <Pressable
           accessibilityRole="button"
           disabled={saving || kept.length === 0}

@@ -19,7 +19,7 @@ import { useRouter } from "expo-router";
 import { Check, CloudOff, Disc3, Heart, LibraryBig } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 /**
  * What a saved crate looks like: both destinations named plainly, and nothing to fill in.
@@ -33,6 +33,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export function SavedScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const { store } = useStore();
   const batch = useAppSelector((state) => state.scan.saved);
@@ -81,7 +82,7 @@ export function SavedScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+    <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.tick}>
           <Check size={26} color="#ffffff" strokeWidth={2} />
@@ -153,7 +154,7 @@ export function SavedScreen() {
         )}
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom }]}>
         <Pressable
           accessibilityRole="button"
           disabled={undoing}
