@@ -1,11 +1,12 @@
 import { ReleaseArt } from "@/components/ReleaseArt";
 import { scanFormat } from "@/features/scan/useScannerLogic";
-import { type KeptScan, scanNaming } from "@/store/scanSlice";
+import { useAppDispatch } from "@/store/hooks";
+import { type KeptScan, scanActions, scanNaming } from "@/store/scanSlice";
 import { colors, fonts } from "@/theme/colors";
 import { FORMAT_LABELS, formatBarcode } from "@janne6565/rekordo-shared";
-import { Disc3, Heart } from "lucide-react-native";
+import { Disc3, Heart, X } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 /**
  * One line of the tray under the camera window.
@@ -13,6 +14,9 @@ import { StyleSheet, Text, View } from "react-native";
  * Both destinations share the row. A heart badge on the thumbnail is the only difference,
  * because at a glance in a shop the question is "did that one land?", not "which list did
  * it land on" — and the count above already answers the second one.
+ *
+ * The X is Review's own remove, at the same size and weight: nothing is written until the
+ * batch is saved, so taking a row out here is the same act as taking it out there.
  */
 export function TrayRow({
   scan,
@@ -22,6 +26,7 @@ export function TrayRow({
   readonly last?: boolean;
 }) {
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const wished = scan.destination === "WISHLIST";
   // A record typed in by hand has a name and no release, so the row asks for the name
   // rather than for the release: only a scan nobody could look up is drawn as digits.
@@ -72,6 +77,15 @@ export function TrayRow({
           </>
         )}
       </View>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t("scan.remove")}
+        onPress={() => dispatch(scanActions.dropped(scan.key))}
+        hitSlop={8}
+      >
+        <X size={15} color="rgba(25,23,19,0.35)" strokeWidth={2} />
+      </Pressable>
     </View>
   );
 }
