@@ -2,7 +2,7 @@ import { useStore } from "@/local/StoreProvider";
 import { colors, fonts } from "@/theme/colors";
 import { UNDO_HOLD, restoreWishlistItem } from "@janne6565/rekordo-shared";
 import { useQueryClient } from "@tanstack/react-query";
-import { HeartOff } from "lucide-react-native";
+import { HeartOff, Trash2 } from "lucide-react-native";
 import {
   type ReactNode,
   createContext,
@@ -22,14 +22,37 @@ export interface WishUndo {
   readonly wantedSince: number;
 }
 
+/**
+ * Something the person removed themselves (3a-x-e, 16b-x-c), and how to bring it back.
+ *
+ * `expire` is what may only happen once Undo can no longer be pressed -- a removed wish's
+ * picture is held on the device until then, because a deleted photo cannot come back. It
+ * runs when the bar times out or another one replaces it, never after an Undo.
+ */
+export interface RemovalUndo {
+  readonly kind: "COPY" | "WISH";
+  readonly title: string;
+  readonly line: string;
+  readonly undo: () => Promise<void>;
+  readonly expire?: () => Promise<void>;
+}
+
+type Pending =
+  | { readonly type: "WISH"; readonly wish: WishUndo }
+  | {
+      readonly type: "REMOVAL";
+      readonly removal: RemovalUndo;
+    };
+
 interface UndoControls {
   readonly offer: (undo: WishUndo) => void;
+  readonly offerRemoval: (removal: RemovalUndo) => void;
 }
 
 const UndoContext = createContext<UndoControls | null>(null);
 
 export function useUndo(): UndoControls {
-  return useContext(UndoContext) ?? { offer: () => undefined };
+  return useContext(UndoContext) ?? { offer: () => undefined, offerRemoval: () => undefined };
 }
 
 /**
@@ -40,30 +63,107 @@ export function useUndo(): UndoControls {
  * nobody is looking at is not a message.
  */
 export function UndoProvider({ children }: { readonly children: ReactNode }) {
-  const [pending, setPending] = useState<WishUndo | null>(null);
+  const [pending, setPending] = useState<Pending | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  /** The removal whose `expire` is still owed, kept outside state so a timer can reach it. */
+  const owed = useRef<RemovalUndo | null>(null);
 
-  const offer = useCallback((undo: WishUndo) => {
-    setPending(undo);
+  /** Settles whatever bar is up: its deferred work runs, unless it was undone. */
+  const settle = useCallback(() => {
     clearTimeout(timer.current);
-    timer.current = setTimeout(() => setPending(null), UNDO_HOLD);
+    const removal = owed.current;
+    owed.current = null;
+    if (removal?.expire !== undefined) void removal.expire();
   }, []);
 
-  useEffect(() => () => clearTimeout(timer.current), []);
+  const show = useCallback(
+    (next: Pending) => {
+      settle();
+      if (next.type === "REMOVAL") owed.current = next.removal;
+      setPending(next);
+      timer.current = setTimeout(() => {
+        settle();
+        setPending(null);
+      }, UNDO_HOLD);
+    },
+    [settle],
+  );
+
+  const offer = useCallback((wish: WishUndo) => show({ type: "WISH", wish }), [show]);
+  const offerRemoval = useCallback(
+    (removal: RemovalUndo) => show({ type: "REMOVAL", removal }),
+    [show],
+  );
+
+  useEffect(() => settle, [settle]);
+
+  const done = () => {
+    clearTimeout(timer.current);
+    setPending(null);
+  };
 
   return (
-    <UndoContext.Provider value={{ offer }}>
+    <UndoContext.Provider value={{ offer, offerRemoval }}>
       {children}
-      {pending !== null && (
-        <UndoLine
-          undo={pending}
-          onDone={() => {
-            clearTimeout(timer.current);
-            setPending(null);
+      {pending?.type === "WISH" && <UndoLine undo={pending.wish} onDone={done} />}
+      {pending?.type === "REMOVAL" && (
+        <RemovalLine
+          removal={pending.removal}
+          onUndone={() => {
+            // Undone, so nothing it was holding back may now go ahead.
+            owed.current = null;
+            done();
           }}
         />
       )}
     </UndoContext.Provider>
+  );
+}
+
+/**
+ * 3a-x-e and 16b-x-c: the 16e bar, with Undo as its action because here the person chose
+ * the removal. The second line repeats what went, so Undo is pressed knowing what it brings
+ * back.
+ */
+function RemovalLine({
+  removal,
+  onUndone,
+}: {
+  readonly removal: RemovalUndo;
+  readonly onUndone: () => void;
+}) {
+  const { t } = useTranslation();
+  const [working, setWorking] = useState(false);
+  const Icon = removal.kind === "COPY" ? Trash2 : HeartOff;
+
+  const undo = async () => {
+    if (working) return;
+    setWorking(true);
+    await removal.undo();
+    onUndone();
+  };
+
+  return (
+    <View style={styles.bar} accessibilityLiveRegion="polite" pointerEvents="box-none">
+      <View style={[styles.card, styles.removalCard]}>
+        <Icon size={17} color="rgba(255,255,255,0.6)" strokeWidth={1.75} />
+        <View style={styles.body}>
+          <Text style={styles.title}>{removal.title}</Text>
+          <Text style={styles.removalLine} numberOfLines={1}>
+            {removal.line}
+          </Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={undo}
+          disabled={working}
+          hitSlop={8}
+          style={styles.undo}
+        >
+          <Text style={styles.undoText}>{t("remove.undo")}</Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
@@ -103,6 +203,9 @@ function UndoLine({ undo, onDone }: { readonly undo: WishUndo; readonly onDone: 
   );
 }
 
+/** The deck's Undo on the ink bar: the accent lifted until it reads on near-black. */
+const UNDO_INK = "#e0b79f";
+
 const styles = StyleSheet.create({
   bar: { position: "absolute", left: 0, right: 0, bottom: 96, paddingHorizontal: 18 },
   card: {
@@ -124,4 +227,22 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   actionText: { fontFamily: fonts.sans, fontSize: 12, fontWeight: "600", color: colors.nightInk },
+  removalCard: {
+    borderRadius: 13,
+    paddingHorizontal: 15,
+    paddingVertical: 13,
+    shadowColor: colors.ink,
+    shadowOpacity: 0.24,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  removalLine: {
+    fontFamily: fonts.sans,
+    fontSize: 11.5,
+    color: colors.nightMuted,
+    marginTop: 2,
+  },
+  undo: { paddingVertical: 8, paddingLeft: 8 },
+  undoText: { fontFamily: fonts.sans, fontSize: 12.5, fontWeight: "600", color: UNDO_INK },
 });

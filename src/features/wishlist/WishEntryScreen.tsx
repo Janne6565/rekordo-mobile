@@ -1,6 +1,7 @@
 import { CoverLightbox } from "@/components/CoverLightbox";
 import { ReleaseArt } from "@/components/ReleaseArt";
 import { Tracklist } from "@/features/tracklist/Tracklist";
+import { RemoveWishSheet } from "@/features/wishlist/RemoveWishSheet";
 import { WishSheet } from "@/features/wishlist/WishSheet";
 import { useWishCoverLogic } from "@/features/wishlist/useWishCoverLogic";
 import { useWishEntryLogic } from "@/features/wishlist/useWishlistLogic";
@@ -40,6 +41,8 @@ export function WishEntryScreen({ wishId }: { readonly wishId: string }) {
   const cover = useWishCoverLogic(wishId);
   const [editing, setEditing] = useState(false);
   const [enlarged, setEnlarged] = useState(false);
+  /** Whether Remove is asking first (16b-x). */
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
 
   const entry = logic.entry;
 
@@ -215,15 +218,25 @@ export function WishEntryScreen({ wishId }: { readonly wishId: string }) {
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            onPress={() => {
-              logic.remove(entry);
-              router.back();
-            }}
+            onPress={() => setConfirmingRemove(true)}
             style={styles.secondary}
           >
             <HeartOff size={15} color={colors.ink} strokeWidth={1.75} />
             <Text style={styles.secondaryText}>{t("wishlist.remove")}</Text>
           </Pressable>
+          <RemoveWishSheet
+            open={confirmingRemove}
+            onClose={() => setConfirmingRemove(false)}
+            onConfirm={(summary) => {
+              setConfirmingRemove(false);
+              logic.remove(entry, summary);
+              router.back();
+            }}
+            entry={entry}
+            since={since}
+            coverUri={logic.coverOf(entry)}
+            pictureUri={cover.uri ?? logic.pictureOf(entry)}
+          />
         </View>
 
         {/* 26c: the same section on a record nobody owns yet. An entry typed in by hand,

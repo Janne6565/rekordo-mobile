@@ -1,5 +1,7 @@
 import { lookupRelease } from "@/api/releases";
+import type { RemovedCopySummary } from "@/features/detail/RemoveCopySheet";
 import { neighboursOf } from "@/features/library/copyOrder";
+import { useUndo } from "@/features/wishlist/UndoBar";
 import { useStore } from "@/local/StoreProvider";
 import type { Copy, CopyPatch, Release } from "@janne6565/rekordo-shared";
 import {
@@ -7,6 +9,7 @@ import {
   applyCopyPatch,
   catalogueKeyOf,
   catalogueKeysOf,
+  restoreCopy,
   tombstoneCopy,
 } from "@janne6565/rekordo-shared";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -84,15 +87,28 @@ export function useDetailLogic(copyId: string) {
     onSuccess: invalidate,
   });
 
+  const { offerRemoval } = useUndo();
   const remove = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (_summary: RemovedCopySummary) => {
       const copy = await store.getCopy(copyId);
       if (copy === undefined) return;
       await store.putCopy(tombstoneCopy(copy, clock, Date.now()));
     },
-    onSuccess: async () => {
+    onSuccess: async (_result, summary) => {
       await invalidate();
       router.replace("/");
+      // 3a-x-e: the write is local, so Undo is a plain restore of the same record.
+      offerRemoval({
+        kind: "COPY",
+        title: summary.title,
+        line: summary.line,
+        undo: async () => {
+          const gone = await store.getCopyIncludingDeleted(copyId);
+          if (gone === undefined) return;
+          await store.putCopy(restoreCopy(gone, clock));
+          await invalidate();
+        },
+      });
     },
   });
 
@@ -101,7 +117,7 @@ export function useDetailLogic(copyId: string) {
     loading: detailQuery.isLoading,
     save: (patch: CopyPatch) => save.mutate(patch),
     saving: save.isPending,
-    remove: () => remove.mutate(),
+    remove: (summary: RemovedCopySummary) => remove.mutate(summary),
     removing: remove.isPending,
   };
 }

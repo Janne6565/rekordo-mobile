@@ -1,4 +1,5 @@
 import { lookupAlbumCovers, lookupReleases } from "@/api/releases";
+import { useUndo } from "@/features/wishlist/UndoBar";
 import { cacheWishAlbums, cachedCoverOf } from "@/features/wishlist/cacheWishReleases";
 import { useWishPhotos } from "@/features/wishlist/useWishPhotos";
 import { useStore } from "@/local/StoreProvider";
@@ -14,6 +15,7 @@ import {
   isManualReleaseId,
   manualOrderWrites,
   moveWish,
+  restoreWishlistItem,
   sortWishlist,
   tombstonePhoto,
   tombstoneWishlistItem,
@@ -224,19 +226,41 @@ export function useWishlistLogic() {
     onSuccess: invalidate,
   });
 
+  const { offerRemoval } = useUndo();
   const remove = useMutation({
-    mutationFn: async (item: WishlistItem) => {
-      const now = Date.now();
-      await store.putWishlistItem(tombstoneWishlistItem(item, clock, now));
-      // The picture goes with it. A wish id is never reused, so a photo left behind is one
-      // nothing can ever reference again — and the server only deletes the object in
-      // storage when the record it belongs to is put down.
-      const picture = (await store.listWishPhotos([item.id])).get(item.id);
-      if (picture !== undefined) await store.putPhoto(tombstonePhoto(picture, clock, now));
+    mutationFn: async ({
+      item,
+    }: { readonly item: WishlistItem; readonly summary: RemovedWish }) => {
+      await store.putWishlistItem(tombstoneWishlistItem(item, clock, Date.now()));
     },
-    onSuccess: async () => {
+    onSuccess: async (_result, { item, summary }) => {
       await invalidate();
-      await queryClient.invalidateQueries({ queryKey: ["wish-photos"] });
+      // 16b-x-c: the entry can come back for as long as the bar is up.
+      offerRemoval({
+        kind: "WISH",
+        title: summary.title,
+        line: summary.line,
+        undo: async () => {
+          const gone = await store.getWishlistItemIncludingDeleted(item.id);
+          if (gone === undefined) return;
+          await store.putWishlistItem(restoreWishlistItem(gone, clock));
+          await invalidate();
+        },
+        /*
+         * The picture goes with it, but only once Undo is out of reach. A wish id is never
+         * reused, so a photo left behind is one nothing can ever reference again -- and the
+         * server deletes the object in storage when the record is put down, so a picture
+         * deleted at the tap could not have come back with the entry.
+         */
+        expire: async () => {
+          const still = await store.getWishlistItemIncludingDeleted(item.id);
+          if (still === undefined || still.deletedAt === null) return;
+          const picture = (await store.listWishPhotos([item.id])).get(item.id);
+          if (picture === undefined) return;
+          await store.putPhoto(tombstonePhoto(picture, clock, Date.now()));
+          await queryClient.invalidateQueries({ queryKey: ["wish-photos"] });
+        },
+      });
     },
   });
 
@@ -294,9 +318,15 @@ export function useWishlistLogic() {
       reorder.mutate({ next });
     },
     edit: (item: WishlistItem, patch: WishPatch) => edit.mutate({ item, patch }),
-    remove: (item: WishlistItem) => remove.mutate(item),
-    removing: remove.isPending ? remove.variables?.id : undefined,
+    remove: (item: WishlistItem, summary: RemovedWish) => remove.mutate({ item, summary }),
+    removing: remove.isPending ? remove.variables?.item.id : undefined,
   };
+}
+
+/** What the undo bar says once a wish is gone (16b-x-c). */
+export interface RemovedWish {
+  readonly title: string;
+  readonly line: string;
 }
 
 /** One entry, for screen 16b. Reads the same store rather than being handed down a list. */

@@ -1,6 +1,7 @@
 import { ReleaseArt } from "@/components/ReleaseArt";
 import { CopyEditor } from "@/features/detail/CopyEditor";
 import { CoverSheet } from "@/features/detail/CoverSheet";
+import { RemoveCopySheet } from "@/features/detail/RemoveCopySheet";
 import { useCopySwipe } from "@/features/detail/useCopySwipe";
 import { useCoverWash } from "@/features/detail/useCoverWash";
 import { useDetailLogic } from "@/features/detail/useDetailLogic";
@@ -167,6 +168,8 @@ function DetailBody({
   const insets = useSafeAreaInsets();
   /** Whether "Add a second" is asking which list the copy goes on. */
   const [choosingCopy, setChoosingCopy] = useState(false);
+  /** Whether "Remove from library" is asking first (3a-x). */
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
   // Left and right move through the order the shelf was showing. The responder sits on the
   // root rather than the ScrollView so it can watch a gesture before the scroll claims it,
   // and it only claims clearly horizontal ones.
@@ -424,7 +427,7 @@ function DetailBody({
 
         <Pressable
           accessibilityRole="button"
-          onPress={logic.remove}
+          onPress={() => setConfirmingRemove(true)}
           disabled={logic.removing}
           style={[styles.remove, { backgroundColor: chrome.surface }]}
         >
@@ -435,6 +438,20 @@ function DetailBody({
           )}
           <Text style={[styles.removeText, { color: chrome.muted }]}>{t("detail.remove")}</Text>
         </Pressable>
+        <RemoveCopySheet
+          open={confirmingRemove}
+          onClose={() => setConfirmingRemove(false)}
+          onConfirm={(summary) => {
+            setConfirmingRemove(false);
+            logic.remove(summary);
+          }}
+          copy={copy}
+          release={release}
+          otherCopies={otherCopies}
+          photos={photos.photos}
+          uriFor={photos.uriFor}
+          previewUri={copyPreviewSrc(copy, photos.firstUri)}
+        />
       </View>
     </CoverSheet>
   );
