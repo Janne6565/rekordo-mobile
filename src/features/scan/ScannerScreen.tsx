@@ -208,7 +208,11 @@ function KeptNote({ scan, onUndo }: { readonly scan: KeptScan; readonly onUndo: 
       <View style={styles.note}>
         <Icon size={14} color="#ffffff" strokeWidth={1.9} />
         <Text style={styles.noteText} numberOfLines={1}>
-          {wished ? t("scan.onTheWishlist", { title }) : t("scan.onTheShelf", { title })}
+          {wished
+            ? t("scan.onTheWishlist", { title })
+            : scan.secondCopy
+              ? t("scan.secondOnTheShelf", { title })
+              : t("scan.onTheShelf", { title })}
         </Text>
         <Pressable accessibilityRole="button" onPress={onUndo} hitSlop={8} style={styles.noteUndo}>
           <Text style={styles.noteUndoText}>{t("scan.undo")}</Text>

@@ -102,6 +102,13 @@ export function useScannerLogic() {
   /** Pressings of the matched release's album, for "1 pressing of 4" and "3 others". */
   const [siblings, setSiblings] = useState<readonly Release[] | null>(null);
   const [picking, setPicking] = useState(false);
+  /**
+   * Whether "Add as a second copy" is asking where the copy goes.
+   *
+   * The camera keeps reading while a card is up, and a sleeve still in frame would replace
+   * the card behind the sheet, so the question would land on a record no longer shown.
+   */
+  const [choosingCopy, setChoosingCopy] = useState(false);
   /** The card the next sleeve replaced, while its "Skipped · Undo" is still in the feed. */
   const [skipped, setSkipped] = useState<ShelvedCard | null>(null);
 
@@ -148,6 +155,7 @@ export function useScannerLogic() {
     setCard(null);
     setSiblings(null);
     setPicking(false);
+    setChoosingCopy(false);
   }, []);
 
   /**
@@ -270,7 +278,7 @@ export function useScannerLogic() {
 
   const handleScan = useCallback(
     (raw: string) => {
-      if (!focused) return;
+      if (!focused || choosingCopy) return;
       const barcode = raw.trim();
       if (!isBarcode(barcode)) return;
       if (looking) return;
@@ -291,7 +299,7 @@ export function useScannerLogic() {
       // raises replaces the open one.
       void resolve(barcode);
     },
-    [focused, card, looking, resolve],
+    [focused, choosingCopy, card, looking, resolve],
   );
 
   const keep = useCallback(
@@ -366,6 +374,9 @@ export function useScannerLogic() {
     picking,
     openPicker: useCallback(() => setPicking(true), []),
     closePicker: useCallback(() => setPicking(false), []),
+    choosingCopy,
+    askWhereCopyGoes: useCallback(() => setChoosingCopy(true), []),
+    closeCopyChoice: useCallback(() => setChoosingCopy(false), []),
     /**
      * What the picker offers: the pressings that share the barcode when several do,
      * otherwise every pressing of the album the match belongs to.

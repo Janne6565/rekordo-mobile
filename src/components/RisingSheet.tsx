@@ -21,7 +21,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
  * sheet travels a short distance: a fixed offset would send a two-row sheet on the same
  * journey as a full-height one and make the small ones look flung.
  */
-const RISE_MS = 260;
+export const RISE_MS = 260;
+
+/** How long the panel takes to drop out, whether dragged away or closed by the sheet. */
+export const LEAVE_MS = 200;
+const EASE_IN = Easing.in(Easing.cubic);
 
 /** How far the panel drops back into place when a drag is let go short of dismissing. */
 const SETTLE_MS = 180;
@@ -63,6 +67,16 @@ interface RisingSheetProps {
    * is otherwise an affordance for a gesture that does nothing.
    */
   readonly onDismiss?: () => void;
+  /**
+   * Set by a sheet that closes itself -- a button, a scrim tap, an answer -- so the panel
+   * leaves the way it arrived instead of vanishing with the modal. The panel drops on the
+   * same curve as a swipe-down, then `onExited` fires and the owner can hide the modal.
+   */
+  readonly exiting?: boolean;
+  readonly onExited?: () => void;
+  /** How that exit moves; a swipe-down's drop unless the sheet's design says otherwise. */
+  readonly exitMs?: number;
+  readonly exitEasing?: (value: number) => number;
   readonly children: React.ReactNode;
 }
 
@@ -90,7 +104,16 @@ export function useSheetBottom(design: number) {
   return Math.max(design, insets.bottom + SYSTEM_GAP);
 }
 
-export function RisingSheet({ visible = true, style, onDismiss, children }: RisingSheetProps) {
+export function RisingSheet({
+  visible = true,
+  style,
+  onDismiss,
+  exiting = false,
+  onExited,
+  exitMs = LEAVE_MS,
+  exitEasing = EASE_IN,
+  children,
+}: RisingSheetProps) {
   const translateY = useRef(new Animated.Value(0)).current;
   const height = useRef(0);
   // Held invisible until the first layout has been measured, otherwise the panel shows for
@@ -162,11 +185,28 @@ export function RisingSheet({ visible = true, style, onDismiss, children }: Risi
     }
     Animated.timing(translateY, {
       toValue: height.current,
-      duration: 200,
+      duration: LEAVE_MS,
       easing: Easing.in(Easing.cubic),
       useNativeDriver: true,
     }).start(() => onDismiss());
   }, [onDismiss, reduceMotion, translateY]);
+
+  const exited = useRef(onExited);
+  exited.current = onExited;
+  useEffect(() => {
+    if (!exiting) return;
+    dismissing.current = true;
+    if (reduceMotion || height.current === 0) {
+      exited.current?.();
+      return;
+    }
+    Animated.timing(translateY, {
+      toValue: height.current,
+      duration: exitMs,
+      easing: exitEasing,
+      useNativeDriver: true,
+    }).start(() => exited.current?.());
+  }, [exiting, reduceMotion, translateY, exitMs, exitEasing]);
 
   const pan = useMemo(
     () =>

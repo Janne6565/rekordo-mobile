@@ -6,9 +6,10 @@ import { useCoverWash } from "@/features/detail/useCoverWash";
 import { useDetailLogic } from "@/features/detail/useDetailLogic";
 import { PhotoStrip } from "@/features/photos/PhotoStrip";
 import { usePhotoStripLogic } from "@/features/photos/usePhotoStripLogic";
+import { SecondCopySheet } from "@/features/scan/SecondCopySheet";
 import { Tracklist } from "@/features/tracklist/Tracklist";
 import { useAppDispatch } from "@/store/hooks";
-import { scanActions } from "@/store/scanSlice";
+import { type ScanDestination, scanActions } from "@/store/scanSlice";
 import { fonts } from "@/theme/colors";
 import type { Copy, DetailChrome, Release } from "@janne6565/rekordo-shared";
 import {
@@ -164,6 +165,8 @@ function DetailBody({
   const router = useRouter();
   const dispatch = useAppDispatch();
   const insets = useSafeAreaInsets();
+  /** Whether "Add a second" is asking which list the copy goes on. */
+  const [choosingCopy, setChoosingCopy] = useState(false);
   // Left and right move through the order the shelf was showing. The responder sits on the
   // root rather than the ScrollView so it can watch a gesture before the scroll claims it,
   // and it only claims clearly horizontal ones.
@@ -214,7 +217,8 @@ function DetailBody({
     dispatch(scanActions.cardDismissed());
     router.back();
   };
-  const addSecond = () => {
+  const addSecond = (destination: ScanDestination) => {
+    setChoosingCopy(false);
     if (scanned === null || release === undefined) return;
     dispatch(
       scanActions.kept({
@@ -222,7 +226,7 @@ function DetailBody({
         barcode: scanned,
         release,
         format: copy.manualFormat ?? (release.format === "OTHER" ? null : release.format),
-        destination: "SHELF",
+        destination,
         secondCopy: true,
         keptAt: Date.now(),
       }),
@@ -285,7 +289,7 @@ function DetailBody({
               {release !== undefined && (
                 <Pressable
                   accessibilityRole="button"
-                  onPress={addSecond}
+                  onPress={() => setChoosingCopy(true)}
                   style={[styles.scanBarButton, { backgroundColor: chrome.ink }]}
                 >
                   <CopyPlus size={16} color={chrome.background} strokeWidth={2} />
@@ -295,6 +299,16 @@ function DetailBody({
                 </Pressable>
               )}
             </View>
+            {release !== undefined && (
+              <SecondCopySheet
+                open={choosingCopy}
+                onClose={() => setChoosingCopy(false)}
+                onChoose={addSecond}
+                release={release}
+                format={copy.manualFormat ?? (release.format === "OTHER" ? null : release.format)}
+                owned={copy}
+              />
+            )}
           </View>
         )
       }

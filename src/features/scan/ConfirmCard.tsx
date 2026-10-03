@@ -1,5 +1,6 @@
 import { releaseDisambiguation } from "@/api/releases";
 import { ReleaseArt } from "@/components/ReleaseArt";
+import { SecondCopySheet } from "@/features/scan/SecondCopySheet";
 import { hiddenPressings, shownPressings } from "@/features/scan/shownPressings";
 import { SCAN_FORMATS, type useScannerLogic } from "@/features/scan/useScannerLogic";
 import { useAppSelector } from "@/store/hooks";
@@ -233,18 +234,15 @@ function Duplicate({ logic }: { readonly logic: Logic }) {
  * Add another of the same, or go and look at the one already on the shelf.
  *
  * Only the two real answers: with Skip in the header, "not now" no longer reads as a
- * third button underneath them.
+ * third button underneath them. Adding asks where the copy goes, because a second one
+ * spotted in a shop is as often something to come back for as something bought.
  */
 function DuplicateActions({ logic, ownedId }: { readonly logic: Logic; readonly ownedId: string }) {
   const { t } = useTranslation();
   const barcode = logic.card?.barcode ?? "";
   return (
     <View style={styles.stack}>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => logic.keep("SHELF")}
-        style={styles.primary}
-      >
+      <Pressable accessibilityRole="button" onPress={logic.askWhereCopyGoes} style={styles.primary}>
         <CopyPlus size={16} color="#ffffff" strokeWidth={2} />
         <Text style={styles.primaryText}>{t("scan.addSecondCopy")}</Text>
       </Pressable>
@@ -255,6 +253,16 @@ function DuplicateActions({ logic, ownedId }: { readonly logic: Logic; readonly 
       >
         <Text style={styles.secondaryText}>{t("scan.openTheOneIHave")}</Text>
       </Pressable>
+      {logic.card?.picked != null && logic.card.owned !== null && (
+        <SecondCopySheet
+          open={logic.choosingCopy}
+          onClose={logic.closeCopyChoice}
+          onChoose={logic.keep}
+          release={logic.card.picked}
+          format={logic.card.format}
+          owned={logic.card.owned}
+        />
+      )}
     </View>
   );
 }
